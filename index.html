@@ -170,6 +170,11 @@ input[type=range]::-moz-range-thumb{width:32px;height:32px;border-radius:50%;bac
 #toast.show{opacity:1}
 .hushbadge{position:fixed;left:calc(12px + var(--sal));bottom:calc(12px + var(--sab));z-index:22;display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:6px 14px;border-radius:24px;background:#222c38;border:2px solid #4d6d91;font-weight:700;font-size:.95rem;color:var(--text)}
 .hushbadge[hidden]{display:none}
+.taphint{display:flex;align-items:center;gap:10px;margin:0 0 8px;color:var(--muted);font-size:.95rem;line-height:1.3}
+.taphint[hidden]{display:none}
+.taphint .swatch{flex:none;width:22px;height:22px;border-radius:6px;background:var(--cardbg);border:4px solid #6e5530}
+.taphint #tapHintTxt{flex:1}
+.hintx{flex:none;min-width:44px;min-height:44px;border-radius:22px;background:transparent;border:2px solid var(--line);color:var(--muted);font-size:1.3rem;line-height:1}
 body.locked [data-back],body.locked #editCards,body.locked #editDay{visibility:hidden}
 body.locked .lockpill{display:inline-flex!important}
 #player.active~.hushbadge,body.inplayer .hushbadge{display:none}
@@ -329,6 +334,21 @@ html.hc{--text:#f0ece4;--muted:#d0d7df;--line:#71849a;--panel:#151b23;--panel2:#
 html.hc .pcard{border-color:#3b434d}
 html.hc .btn,html.hc .tile,html.hc .trow{border-width:3px}
 .libres{max-height:420px;overflow:auto}
+
+#talk .stripbtns{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+#talk .stripbtns #sayStrip,#talk .stripbtns #bigStrip{grid-column:span 3}
+#talk .stripbtns .btn{grid-column:span 2;white-space:nowrap;min-height:48px;padding:.3em .4em}
+#sayStrip.ready{box-shadow:0 0 0 4px #e0b25a}
+@media (max-width:700px){#talk .strip{position:sticky;top:64px;z-index:5;flex-wrap:wrap}#talk .slots{flex:1 1 100%}}
+.hushbadge{left:auto;bottom:auto;right:calc(10px + var(--sar));top:calc(10px + var(--sat));min-height:44px;padding:4px 12px}
+#home.active~.hushbadge{display:none}
+.pbtn{background:rgba(24,32,42,.88);border-color:rgba(200,212,225,.75);color:#eef2f6}
+.hint{color:#eef2f6;background:rgba(14,18,24,.82);border-radius:20px;padding:.5em 1em;border:1px solid rgba(200,212,225,.4)}
+#hushInScene{display:block;font-size:.85rem;color:#f0d79a}
+#gate .gatebox{background:#2a3644;border-color:#7d97b3}#gate{background:rgba(18,24,32,.9)}
+body.mixon #mix .card{border-color:#7fb3e0;box-shadow:0 0 28px rgba(90,150,220,.5)}
+body.mixon #mix h1::after{content:'  \266A playing';color:#9fd0ff;font-size:.8em}
+details.ab{border-top:1px solid var(--line);padding:6px 0}details.ab summary{font-size:1.2rem;font-weight:700;min-height:48px;display:flex;align-items:center;cursor:pointer}
 </style>
 </head>
 <body>
@@ -391,9 +411,13 @@ html.hc .btn,html.hc .tile,html.hc .trow{border-width:3px}
   <fieldset><legend>Sound</legend><div class="seg">
    <label><input type="radio" name="p_sound" value="silence"><span>Silence to start</span></label>
    <label><input type="radio" name="p_sound" value="sound"><span>Gentle sound on</span></label></div></fieldset>
+  <fieldset><legend>Colour strength</legend><div class="seg">
+   <label><input type="radio" name="p_colour" value="vivid"><span>Vivid (rich, bright colours)</span></label>
+   <label><input type="radio" name="p_colour" value="soft"><span>Soft (muted and dimmer)</span></label></div>
+   <p class="muted" style="margin:8px 0 0">Both change slowly and never flash.</p></fieldset>
   <fieldset><legend>Brightness</legend><div class="seg">
    <label><input type="radio" name="p_light" value="dim"><span>Dim</span></label>
-   <label><input type="radio" name="p_light" value="brighter"><span>A little brighter</span></label></div></fieldset>
+   <label><input type="radio" name="p_light" value="brighter"><span>Brighter</span></label></div></fieldset>
   <fieldset><legend>Movement</legend><div class="seg">
    <label><input type="radio" name="p_pace" value="slow"><span>Slow</span></label>
    <label><input type="radio" name="p_pace" value="veryslow"><span>Very slow</span></label></div></fieldset>
@@ -436,10 +460,7 @@ html.hc .btn,html.hc .tile,html.hc .trow{border-width:3px}
    <label><input type="radio" name="p_gate" value="hard"><span>Hold, then harder sums (two digits)</span></label>
    <label><input type="radio" name="p_gate" value="off"><span>No check (I use it myself)</span></label></div>
    <p class="muted" style="margin:8px 0 0">Three wrong answers lock the check for a minute.</p></fieldset>
-  <fieldset><legend>Tapping a talk card</legend><div class="seg">
-   <label><input type="radio" name="p_cardTap" value="auto"><span>Show it big; after "I want / I need / I feel", add it to the sentence</span></label>
-   <label><input type="radio" name="p_cardTap" value="add"><span>Always add to the sentence</span></label>
-   <label><input type="radio" name="p_cardTap" value="big"><span>Always show it big</span></label></div></fieldset>
+  <p class="muted">What a talk card does when tapped is set on the Talk screen, under "Change cards (adult)".</p>
   <fieldset><legend>Cards in a sentence</legend><div class="seg">
    <label><input type="radio" name="p_slots" value="3"><span>3</span></label><label><input type="radio" name="p_slots" value="4"><span>4</span></label>
    <label><input type="radio" name="p_slots" value="5"><span>5</span></label><label><input type="radio" name="p_slots" value="6"><span>6</span></label></div></fieldset>
@@ -478,27 +499,27 @@ html.hc .btn,html.hc .tile,html.hc .trow{border-width:3px}
   <h1 id="aboutH" tabindex="-1" data-focus>About Calm Space</h1>
   <p><b>Free, private and made to help.</b> No ads, no accounts, no tracking. Your settings stay on this device, and it works offline.</p>
   <p>Calm Space is a set of slow, gentle light and sound scenes, plus a few quiet fidgets to press, flick, spin and squish. Pick one, change it until it feels right, and save it as your calm. Then "Calm now" opens it in one tap. It was designed with autistic adults and SEN classrooms in mind, but anyone can use it.</p>
-  <h2>How it keeps things safe</h2>
+  <details class="ab"><summary>How it keeps things safe</summary>
   <ul>
-   <li>Nothing in the scenes flashes. Light and colour change slowly and smoothly, over several seconds.</li>
+   <li>Colours are rich and vivid by default, but nothing in the scenes flashes: light and colour change slowly and smoothly, over several seconds. An adult can choose Soft colours instead.</li>
    <li>There are never more than two noticeable changes in brightness a second. That's stricter than the international accessibility guideline for websites.</li>
-   <li>Reds in the scenes are kept soft and muted. (The picture cards use the standard ARASAAC colours.)</li>
+   <li>Reds never flash or change quickly, following the international red-flash guideline.</li>
    <li>Brightness is capped, so the screen never turns bright white.</li>
-   <li>Scene sounds start off unless an adult chooses "Gentle sound". They fade in slowly and the volume is limited. Talk cards speak softly in the device's own voice.</li>
+   <li>Scene sounds play gently by default; anyone can tap Hush to turn them off. They fade in slowly and the volume is limited. Talk cards speak softly in the device's own voice.</li>
    <li>If your device is set to reduce motion, everything moves more slowly. "Even gentler" slows it down further.</li>
   </ul>
   <p>This is built in for everyone, so there's nothing to switch on. Even so, stop if anything feels uncomfortable.</p>
-  <h2>Classroom mode</h2>
+  </details><details class="ab"><summary>Classroom mode</summary>
   <p>Open a scene, tap Adjust, then Adult options, then Classroom mode. The controls disappear and the scene stays put, full screen where possible. To leave, an adult presses and holds a top corner of the screen for 3 seconds, then answers the sums. After a cancelled check it waits 15 seconds before the next one. Talk and My day can also be locked from their adult panels ("Lock this screen"), which hides ← Home until an adult unlocks it.</p>
-  <h2>Safe to explore</h2>
+  </details><details class="ab"><summary>Safe to explore</summary>
   <p>Tapping, swiping or holding anywhere can't break anything. There are no links out of the app, sound and brightness are always capped, and Preferences, routines and cards are behind an adult check: hold a button for 3 seconds, then answer a sum. Changes made with Adjust last until the app is closed; "Save as my calm" keeps one favourite. Hush is for anyone: one tap turns scene sounds and timer voices off or on, and talk cards keep speaking.</p>
-  <h2>My day &amp; talk</h2>
+  </details><details class="ab"><summary>My day &amp; talk</summary>
   <p>Picture cards in groups (core words, feelings with a 1 to 5 scale, people, food and drink, places, things to do and your own cards), kept phrases, a quick Yes / No, a Now / Next / Later picture timetable with optional gentle timers, a First / Then board, and three routines (school day, weekend, bedtime). Cards speak softly using the device's own voice. Only an adult can change the timetable or add photo cards. Photos stay on this device.</p>
-  <h2>Not a medical device</h2>
+  </details><details class="ab"><summary>Not a medical device</summary>
   <p>Calm Space is not a medical device or a treatment, and the talk cards are not a replacement for a full communication aid. It doesn't diagnose, treat or prevent anything. If you have been given advice about screens or light, please follow it.</p>
-  <h2>Credits</h2>
+  </details><details class="ab"><summary>Credits</summary>
   <p class="muted">Pictograms: Sergio Palao. Origin: ARASAAC (arasaac.org). Licence: CC BY-NC-SA 4.0 (creativecommons.org/licenses/by-nc-sa/4.0). Owner: Government of Aragón (Spain). The pictograms have been resized and compressed for this app. Used here in a free, non-commercial app, and shared under the same licence. (Web addresses are shown as text, because Calm Space has no links out of the app.)</p>
- </div>
+ </details></div>
 </section>
 
 <!-- Talk cards -->
@@ -510,14 +531,20 @@ html.hc .btn,html.hc .tile,html.hc .trow{border-width:3px}
   </div>
   <div class="strip" role="group" aria-label="Sentence strip">
    <div class="slots" id="slots" role="status"></div>
-   <div class="stripbtns"><button class="btn primary" id="sayStrip">Say it</button><button class="btn" id="keepStrip" aria-label="Keep this phrase">&#9734; Keep</button><button class="btn" id="undoStrip" aria-label="Take off the last card">&#8630; Last</button><button class="btn" id="clearStrip">Clear</button></div>
+   <div class="stripbtns"><button class="btn primary" id="sayStrip">&#128264; Say it</button><button class="btn" id="bigStrip">&#9974; Show big</button><button class="btn" id="keepStrip" aria-label="Keep this phrase">&#9734; Keep</button><button class="btn" id="undoStrip" aria-label="Take off the last card">&#8630; Last</button><button class="btn" id="clearStrip">Clear</button></div>
   </div>
   <div id="favs" class="favs" role="group" aria-label="Kept phrases"></div>
+  <p class="taphint" id="tapHint"><span id="tapHintTxt"></span><button class="hintx" id="tapHintX" aria-label="Hide this tip">&times;</button></p>
   <div class="tabs" role="tablist" aria-label="Card groups" id="tabs"></div>
   <div class="scale" id="scale" role="group" aria-label="How big is the feeling?" hidden></div>
   <div class="cards" id="cards" role="tabpanel"></div>
   <div class="row" style="margin-top:20px"><button class="btn quiet lockpill" data-unlock hidden>&#128274; Locked: hold 3 s to unlock</button><button class="btn quiet" id="editCards" data-carer="Change cards (adult)" data-self="Edit cards">Change cards (adult)</button></div>
   <div id="cardEdit" class="card" hidden style="margin-top:12px">
+   <fieldset><legend>When a card is tapped</legend><div class="seg">
+    <label><input type="radio" name="t_cardTap" value="add"><span>Say it and add it to the sentence (usual)</span></label>
+    <label><input type="radio" name="t_cardTap" value="quiet"><span>Add it to the sentence without saying it</span></label>
+    <label><input type="radio" name="t_cardTap" value="big"><span>Show it big</span></label></div>
+    <p class="muted" style="margin:8px 0 0">"Show big" on the sentence strip shows the whole sentence full screen. <button class="btn quiet" id="tapHintBack" style="min-height:44px">Show the tip on Talk again</button></p></fieldset>
    <div class="row" style="margin-bottom:10px"><button class="btn" data-lockscreen>&#128274; Lock this screen</button><span class="muted">Hides ← Home until an adult unlocks it.</span></div>
    <h2>Change cards</h2>
    <p class="muted">Card size and touch options are in Preferences. Everything here stays on this device.</p>
@@ -613,7 +640,7 @@ html.hc .btn,html.hc .tile,html.hc .trow{border-width:3px}
   <div class="ctl"><label for="c_speed"><span>Speed</span><span id="v_speed" class="muted"></span></label>
    <input type="range" id="c_speed" min="0.2" max="1.5" step="0.05"><div class="ends" aria-hidden="true"><span>Slower</span><span>Faster</span></div></div>
   <div class="ctl"><label for="c_bright"><span>Brightness</span><span id="v_bright" class="muted"></span></label>
-   <input type="range" id="c_bright" min="0.25" max="0.85" step="0.05"><div class="ends" aria-hidden="true"><span>Dimmer</span><span>Brighter (still dim)</span></div></div>
+   <input type="range" id="c_bright" min="0.25" max="0.85" step="0.05"><div class="ends" aria-hidden="true"><span>Dimmer</span><span>Brighter (never white)</span></div></div>
   <div class="ctl" role="radiogroup" aria-labelledby="palLab"><div class="lab" id="palLab">Colours</div><div class="swatches" id="swatches"></div></div>
   <div class="ctl">
    <button class="switch" role="switch" id="c_sound" aria-checked="false"><span><b>Sound</b><br><span class="muted" id="soundName"></span></span><span class="knob" aria-hidden="true"></span></button>
@@ -663,7 +690,7 @@ const TAU=Math.PI*2;
 function hsl(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));return[f(0)*255,f(8)*255,f(4)*255]}
 function cycle(C,ph){const n=C.length,i=Math.floor(ph),f=sm(ph-i);return mix(C[((i%n)+n)%n],C[(((i+1)%n)+n)%n],f)}
 
-/* ---------- Palettes: muted, mid-to-low lightness. Red hues kept at low saturation. ---------- */
+/* ---------- Palettes. Soft: muted, mid-to-low lightness, low-saturation reds. Vivid (default) below. ---------- */
 const PALS={
  blues:{name:'Blues',bg:[218,40,9],c:[[210,45,34],[225,38,40],[195,42,34],[240,28,40],[205,35,44]]},
  greens:{name:'Greens',bg:[170,35,7],c:[[150,32,30],[170,35,32],[130,24,34],[185,34,30],[160,22,40]]},
@@ -671,19 +698,26 @@ const PALS={
  lilac:{name:'Lilac',bg:[260,25,9],c:[[265,24,38],[285,20,36],[250,24,40],[300,16,36],[235,20,40]]},
  mono:{name:'Grey',bg:[220,8,8],c:[[220,6,30],[220,6,38],[220,6,26],[220,6,34],[220,6,42]]}
 };
-for(const k in PALS){const p=PALS[k];
-  p.c.forEach(c=>{const h=c[0];if(h<15||h>345)c[1]=Math.min(c[1],40)}); // safety: soft reds only
-  p.bgRGB=hsl(...p.bg);p.cRGB=p.c.map(c=>hsl(...c))}
+/* Vivid (default): rich, saturated colours at mid lightness (never above 64%, so never white). Safety comes from slow change, not dullness. */
+const PALV={blues:{bg:[222,70,16],c:[[205,90,52],[230,85,58],[190,90,45],[255,75,60],[175,80,42]]},
+ greens:{bg:[165,70,12],c:[[145,80,45],[170,85,42],[95,75,48],[185,85,45],[125,70,50]]},
+ warm:{bg:[20,60,14],c:[[25,95,55],[40,95,52],[14,88,52],[335,80,55],[50,90,50]]},
+ lilac:{bg:[265,55,16],c:[[270,75,62],[295,70,58],[250,80,64],[320,70,58],[230,75,62]]},
+ mono:{bg:[220,10,12],c:[[220,10,45],[220,10,55],[220,10,38],[220,10,50],[220,10,60]]}};
+for(const k in PALS)PALS[k].c.forEach(c=>{const h=c[0];if(h<15||h>345)c[1]=Math.min(c[1],40)}); // Soft: muted reds
+let palReady=false;const vivid=()=>!palReady||prefs.colour!=='soft';
+function buildPals(){for(const k in PALS){const p=PALS[k],src=vivid()?PALV[k]:p;p.bgRGB=hsl(...src.bg);p.cRGB=src.c.map(c=>hsl(...c))}} // the renderer eases to the new colours over several seconds
 
 /* ---------- Motion preferences ---------- */
 const RM=window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):{matches:false};
-const PREF0={sound:'silence',light:'dim',pace:'slow',gentler:false,breathe:false,idle:120,awake:false,speak:true,speakVol:.6,grid:'auto',select:'tap',bigtext:false,hc:false,haptic:false,hush:false,hushTalk:false,infoSpeak:true,timerSpeak:'spoken',cardTap:'auto',gate:'sums',mode:'carer',textSize:100,dimCards:false,slots:3,lastBackup:0};
+const PREF0={sound:'sound',light:'dim',pace:'slow',gentler:false,breathe:false,idle:120,awake:false,speak:true,speakVol:.9,grid:'auto',select:'tap',bigtext:false,hc:false,haptic:false,hush:false,hushTalk:false,infoSpeak:true,timerSpeak:'spoken',cardTap:'add',gate:'sums',mode:'carer',textSize:100,dimCards:false,slots:5,lastBackup:0,colour:'vivid'};
 let prefs=Object.assign({},PREF0,store.get('prefs',{}));
 /* Range-check stored or restored prefs: anything unexpected falls back to the default */
-(function(){const P=prefs,ok={sound:['silence','sound'],light:['dim','brighter'],pace:['slow','veryslow'],grid:['auto','2','4','6','9','16'],select:['tap','250','500','1000'],timerSpeak:['spoken','screen'],cardTap:['auto','add','big'],gate:['sums','hard','off'],mode:['carer','self']};
+(function(){const P=prefs,ok={sound:['silence','sound'],light:['dim','brighter'],pace:['slow','veryslow'],grid:['auto','2','4','6','9','16'],select:['tap','250','500','1000'],timerSpeak:['spoken','screen'],cardTap:['add','quiet','big'],gate:['sums','hard','off'],mode:['carer','self'],colour:['vivid','soft']};
  for(const k in ok)if(!ok[k].includes(String(P[k])))P[k]=PREF0[k];P.grid=String(P.grid);P.select=String(P.select);
  P.idle=isFinite(+P.idle)?Math.min(3600,Math.max(0,Math.round(+P.idle))):PREF0.idle;P.speakVol=Math.min(1,Math.max(0,+P.speakVol||0));P.slots=Math.min(6,Math.max(3,+P.slots||3));P.textSize=[100,120,150,200].includes(+P.textSize)?+P.textSize:100;
  ['gentler','breathe','awake','speak','bigtext','hc','haptic','hush','hushTalk','infoSpeak','dimCards'].forEach(k=>P[k]=!!P[k]);P.lastBackup=+P.lastBackup||0})();
+palReady=true;buildPals();
 if(['auto','2','4','6','9','16'].indexOf(String(prefs.grid))<0)prefs.grid='auto';if(['tap','250','500','1000'].indexOf(String(prefs.select))<0)prefs.select='tap';
 function applyLook(){const h=document.documentElement;const ts=[100,120,150,200].includes(+prefs.textSize)?+prefs.textSize:100;h.style.setProperty('--ts',(prefs.bigtext&&ts===100?120:ts)/100);h.classList.toggle('bigtext',false);h.classList.toggle('hc',!!prefs.hc);h.classList.toggle('dimcards',!!prefs.dimCards);
  const m=prefs.mode==='self'?'self':'carer';document.querySelectorAll('[data-carer]').forEach(e=>{e.textContent=e.dataset[m]})}
@@ -692,11 +726,11 @@ const gentleFactor=()=>(prefs.gentler?0.5:1)*(RM.matches?0.5:1);
 let AMP=1;const updAmp=()=>{AMP=(prefs.gentler?0.6:1)*(RM.matches?0.7:1)};updAmp();
 
 /* ---------- Sound (Web Audio, generated on the device) ---------- */
-const Sound={ctx:null,master:null,bus:null,nodes:[],type:null,vol:.4,MAX:.2,CEIL:.25,nb:{},fading:[],pops:0,lastPop:-1e9,wanted:null,rt:0,an:null,
+const Sound={ctx:null,master:null,bus:null,nodes:[],type:null,vol:.6,MAX:.3,CEIL:.25,nb:{},fading:[],pops:0,lastPop:-1e9,wanted:null,rt:0,an:null,
  ensure(){if(!this.ctx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;
    const c=this.ctx=new AC();const lim=c.createDynamicsCompressor();lim.threshold.value=-20;lim.knee.value=10;lim.ratio.value=12;lim.attack.value=.005;lim.release.value=.4;
    this.master=c.createGain();this.master.gain.value=0;this.master.connect(lim);const trim=c.createGain();trim.gain.value=.5;const cl=c.createWaveShaper(),N=2048,cv=new Float32Array(N);for(let i=0;i<N;i++){const x=(i/(N-1))*2-1;cv[i]=this.CEIL*Math.tanh(x*4/this.CEIL)/Math.tanh(4/this.CEIL)}cl.curve=cv;
-   this.an=c.createAnalyser();this.an.fftSize=2048;lim.connect(trim);trim.connect(cl);cl.connect(this.an);this.an.connect(c.destination)} // hard ceiling: output can never exceed CEIL
+   this.an=c.createAnalyser();this.an.fftSize=2048;lim.connect(trim);trim.connect(cl);cl.connect(this.an);this.an.connect(c.destination);this.master.gain.setValueAtTime(0,c.currentTime);this.master.gain.linearRampToValueAtTime(this.vol*this.MAX,c.currentTime+1)} // hard ceiling: output can never exceed CEIL. (Bug fix: the master used to stay at 0 when the first volume was set before the context existed.)
   if(this.ctx.state==='suspended')this.ctx.resume();return true},
  setVol(v){v=clamp(+v||0,0,1);this.vol=v;if(!this.ctx)return;const g=this.master.gain,n=this.ctx.currentTime;g.cancelScheduledValues(n);g.setValueAtTime(g.value,n);g.linearRampToValueAtTime(clamp(v,0,1)*this.MAX,n+1)},
  noise(kind){if(this.nb[kind])return this.nb[kind];const c=this.ctx,sr=c.sampleRate,len=sr*8,F=sr|0,tmp=new Float32Array(len+F);
@@ -742,44 +776,49 @@ const Sound={ctx:null,master:null,bus:null,nodes:[],type:null,vol:.4,MAX:.2,CEIL
 const FX={
  wash:{name:'Colour wash',desc:'Soft colours drifting slowly',sound:'tones',soundName:'Soft tones',pal:'blues',scale:.5,
   make(){return{g:[],last:0,init(){},
-   frame(ctx,w,h,dt,t,P,rdt){const T=t/18,c0=cycle(P.c,T),c1=cycle(P.c,T+1.4),c2=cycle(P.c,T+2.7),c3=cycle(P.c,T+3.9),m=Math.max(w,h);
-    const lg=ctx.createLinearGradient(0,0,w*.3,h);lg.addColorStop(0,rgb(mix(P.bg,c0,.65)));lg.addColorStop(1,rgb(mix(P.bg,c1,.45)));ctx.fillStyle=lg;ctx.fillRect(0,0,w,h);
-    [[c2,.3,.35,47,0],[c3,.7,.65,61,2],[c1,.5,.2,73,4]].forEach(([c,bx,by,per,ph])=>{const x=w*(bx+.22*AMP*Math.sin(t*TAU/per+ph)),y=h*(by+.22*AMP*Math.cos(t*TAU/(per*1.3)+ph));
-     const g=ctx.createRadialGradient(x,y,0,x,y,m*.7);g.addColorStop(0,rgb(c,.5));g.addColorStop(1,rgb(c,0));ctx.fillStyle=g;ctx.fillRect(0,0,w,h)});
-    const lc=mix(c2,[230,235,240],.3),r=Math.min(w,h)*.32;
-    this.g=this.g.filter(o=>(o.age+=rdt)<7);
-    for(const o of this.g){const a=sm(o.age/2.5)*(1-sm((o.age-2.5)/4.5));const g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,r);g.addColorStop(0,rgb(lc,.16*a));g.addColorStop(1,rgb(lc,0));ctx.fillStyle=g;ctx.fillRect(o.x-r,o.y-r,r*2,r*2)}},
-   touch(x,y,k,now){if(now-this.last>900){this.last=now;this.g.push({x,y,age:0});if(this.g.length>6)this.g.shift()}}}}},
+   frame(ctx,w,h,dt,t,P,rdt){const T=t/18,m=Math.max(w,h),A=AMP||1;
+    /* A slow hue journey (one full circle about every 26 s), blended with the chosen palette. Muted: saturation <= 55%, reds kept at 22%, lightness fixed and dim. */
+    const J=o=>{let hh=((205+o+360*t/26)%360+360)%360;if(vivid()){const u=((191+o+652*t/52)%652+652)%652;hh=14+(u<326?u:652-u)} // vivid: the hue sweeps smoothly back and forth between orange-red (14) and rose (340), never jumping across full red // vivid scarlet is shown as orange-red or rose, so red never shimmers at full strength
+    const red=hh<30||hh>330,sat=vivid()?.85:(red?.22:.55),l=vivid()?.5:.4;const f=n=>{const k=(n+hh/30)%12;return 255*(l-sat*Math.min(l,1-l)*Math.max(-1,Math.min(k-3,9-k,1)))};return[f(0),f(8),f(4)]};
+    const c0=mix(cycle(P.c,T),J(0),.7),c1=mix(cycle(P.c,T+1.4),J(90),.7),c2=mix(cycle(P.c,T+2.7),J(180),.7),c3=mix(cycle(P.c,T+3.9),J(270),.7);
+    const ang=t*TAU/40,dx=Math.cos(ang)*w*.5,dy=Math.sin(ang)*h*.5;
+    const lg=ctx.createLinearGradient(w/2-dx,h/2-dy,w/2+dx,h/2+dy);lg.addColorStop(0,rgb(mix(P.bg,c0,.85)));lg.addColorStop(1,rgb(mix(P.bg,c1,.75)));ctx.fillStyle=lg;ctx.fillRect(0,0,w,h);
+    [[c2,.28,.3,23,0],[c3,.72,.7,29,2],[c1,.5,.15,37,4],[c0,.3,.85,31,1]].forEach(([c,bx,by,per,ph])=>{const x=w*(bx+.3*A*Math.sin(t*TAU/per+ph)),y=h*(by+.25*A*Math.cos(t*TAU/(per*1.3)+ph));
+     const g=ctx.createRadialGradient(x,y,0,x,y,m*.6);g.addColorStop(0,rgb(c,.8));g.addColorStop(1,rgb(c,0));ctx.fillStyle=g;ctx.fillRect(0,0,w,h)});
+    /* Touch: a soft colour glow blooms slowly (about 3 s), then fades over 6 s. Never white; capped count. */
+    const r=Math.min(w,h)*.42;this.g=this.g.filter(o=>(o.age+=rdt)<9);
+    for(const o of this.g){const a=sm(o.age/3)*(1-sm((o.age-3)/6)),lc=J(o.off);const g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,r*(.6+.4*sm(o.age/3)));g.addColorStop(0,rgb(mix(lc,[200,205,210],.15),.5*a));g.addColorStop(1,rgb(lc,0));ctx.fillStyle=g;ctx.fillRect(o.x-r,o.y-r,r*2,r*2)}},
+   touch(x,y,k,now){if(now-this.last>1500&&this.g.length<4){this.last=now;this.g.push({x,y,age:0,off:110+((now/7)%140)})}} /* at most 4 glows; an old glow is never cut off suddenly */}}},
  bubbles:{name:'Floating bubbles',desc:'Tap a bubble for a soft pop',sound:'water',soundName:'Gentle water',pal:'greens',scale:1.5,
   make(){return{b:[],w:0,h:0,
    mk(w,h,any){const s=clamp(Math.min(w,h)/600,.7,1.6),r=(18+Math.random()*46)*s;return{x:Math.random()*w,y:any?Math.random()*h:h+r+Math.random()*h*.3,r,v:(12+Math.random()*16)*s,ph:Math.random()*TAU,sw:(8+Math.random()*14)*s,ci:(Math.random()*5)|0,a:0,pop:-1}},
    init(w,h){const n=Math.round(clamp(w*h/40000,10,24));if(this.w&&this.b.length){const sx=w/this.w,sy=h/this.h;this.b.forEach(o=>{o.x*=sx;o.y*=sy})}else{this.b=[];for(let i=0;i<n;i++)this.b.push(this.mk(w,h,true))}this.w=w;this.h=h},
-   frame(ctx,w,h,dt,t,P,rdt){const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,rgb(P.bg));g.addColorStop(1,rgb(mix(P.bg,P.c[0],.35)));ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
-    for(const o of this.b){o.y-=o.v*dt;o.a=Math.min(1,o.a+rdt/2.5);let r=o.r,a=o.a;
+   frame(ctx,w,h,dt,t,P,rdt){const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,rgb(mix(P.bg,P.c[2],.35)));g.addColorStop(1,rgb(mix(P.bg,P.c[0],.65)));ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+    for(const o of this.b){o.y-=o.v*dt;o.a=Math.min(1,o.a+rdt/1.2);let r=o.r,a=o.a;
      if(o.pop>=0){o.pop+=rdt;const p=sm(o.pop/1.4);r*=1+.25*p;a*=1-p;if(o.pop>=1.4)Object.assign(o,this.mk(w,h,false))}
      if(o.y<-o.r*2)Object.assign(o,this.mk(w,h,false));
      const x=o.x+Math.sin(t*.35+o.ph)*o.sw*AMP,c=P.c[o.ci],lc=mix(c,[225,235,240],.45);o.cx=x;
-     const rg=ctx.createRadialGradient(x-r*.3,o.y-r*.35,r*.1,x,o.y,r);rg.addColorStop(0,rgb(lc,.28*a));rg.addColorStop(.75,rgb(c,.14*a));rg.addColorStop(1,rgb(lc,.26*a));
+     const rg=ctx.createRadialGradient(x-r*.3,o.y-r*.35,r*.1,x,o.y,r);rg.addColorStop(0,rgb(lc,.75*a));rg.addColorStop(.75,rgb(c,.5*a));rg.addColorStop(1,rgb(lc,.8*a));
      ctx.fillStyle=rg;ctx.beginPath();ctx.arc(x,o.y,r,0,TAU);ctx.fill()}},
    touch(x,y,k){if(k!=='down')return;for(let i=this.b.length-1;i>=0;i--){const o=this.b[i];if(o.pop<0&&o.a>.3&&Math.hypot(x-o.cx,y-o.y)<o.r*1.15){o.pop=0;Sound.pop();return}}
     if(this.b.length<36){const o=this.mk(this.w,this.h,false);o.x=x;o.y=y;o.r*=.7;this.b.push(o)}}}}},
  ripples:{name:'Fluid ripples',desc:'Touch to leave slow ripples',sound:'rain',soundName:'Soft rain',pal:'blues',scale:1.25,
   make(){return{r:[],next:1.5,last:0,
    init(){},add(x,y){this.r.push({x,y,age:0});if(this.r.length>24)this.r.shift()},
-   frame(ctx,w,h,dt,t,P,rdt){const c0=cycle(P.c,t/25),c1=cycle(P.c,t/25+2);const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,rgb(mix(P.bg,c0,.4)));g.addColorStop(1,rgb(mix(P.bg,c1,.25)));
-    ctx.fillStyle=g;ctx.fillRect(0,0,w,h);this.next-=dt;if(this.next<=0){this.next=2.5+Math.random()*4;this.add(Math.random()*w,Math.random()*h)}
-    const s=clamp(Math.min(w,h)/600,.7,1.6),lc=mix(cycle(P.c,t/25+1),[220,232,240],.35);ctx.lineWidth=2.5*s;
+   frame(ctx,w,h,dt,t,P,rdt){const c0=cycle(P.c,t/25),c1=cycle(P.c,t/25+2);const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,rgb(mix(P.bg,c0,.75)));g.addColorStop(1,rgb(mix(P.bg,c1,.55)));
+    ctx.fillStyle=g;ctx.fillRect(0,0,w,h);{const m=Math.max(w,h),c2=cycle(P.c,t/25+3),x=w*(.5+.3*AMP*Math.sin(t*TAU/37)),y=h*(.5+.3*AMP*Math.cos(t*TAU/43)),rg=ctx.createRadialGradient(x,y,0,x,y,m*.55);rg.addColorStop(0,rgb(c2,.6));rg.addColorStop(1,rgb(c2,0));ctx.fillStyle=rg;ctx.fillRect(0,0,w,h)}this.next-=dt;if(this.next<=0){this.next=2.5+Math.random()*4;this.add(Math.random()*w,Math.random()*h)}
+    const s=clamp(Math.min(w,h)/600,.7,1.6),lc=mix(cycle(P.c,t/25+1),[220,232,240],.45);ctx.lineWidth=4*s;
     this.r=this.r.filter(o=>(o.age+=dt)<8);
-    for(const o of this.r){const a=.28*sm(o.age/.8)*Math.pow(1-o.age/8,1.5),R=o.age*36*s;ctx.strokeStyle=rgb(lc,a);
+    for(const o of this.r){const a=.65*sm(o.age/.8)*Math.pow(1-o.age/8,1.5),R=o.age*36*s;ctx.strokeStyle=rgb(lc,a);
      for(const f of[1,.68,.42]){const rr=R*f-6*s;if(rr>1){ctx.beginPath();ctx.arc(o.x,o.y,rr,0,TAU);ctx.stroke()}}}},
    touch(x,y,k,now){if(k==='down'||(k==='move'&&now-this.last>280)){this.last=now;this.add(x,y)}}}}},
- stars:{name:'Night sky',desc:'Slow, dim stars',sound:'night',soundName:'Night hum',pal:'blues',scale:1.5,
+ stars:{name:'Night sky',desc:'Slow stars over glowing colour clouds',sound:'night',soundName:'Night hum',pal:'blues',scale:1.5,
   make(){return{s:[],extra:0,w:0,h:0,
-   mk(w,h){return{x:Math.random()*w,y:Math.random()*h,z:.3+Math.random()*.7,sz:.6+Math.random()*1.4,b:.25+Math.random()*.5,tw:6+Math.random()*10,ph:Math.random()*TAU,a:1}},
+   mk(w,h){return{x:Math.random()*w,y:Math.random()*h,z:.3+Math.random()*.7,sz:1+Math.random()*2,b:.55+Math.random()*.45,tw:6+Math.random()*10,ph:Math.random()*TAU,a:1}},
    init(w,h){const n=Math.round(clamp(w*h/2600,80,520));if(this.w&&this.s.length){const sx=w/this.w,sy=h/this.h;this.s.forEach(o=>{o.x*=sx;o.y*=sy})}else{this.s=[];for(let i=0;i<n;i++)this.s.push(this.mk(w,h))}this.w=w;this.h=h},
-   frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,[0,0,0],.45));ctx.fillRect(0,0,w,h);const m=Math.max(w,h);
-    [[P.c[0],.3,.4,90,0],[P.c[3],.75,.6,110,2]].forEach(([c,bx,by,per,ph])=>{const x=w*(bx+.1*AMP*Math.sin(t*TAU/per+ph)),y=h*(by+.08*AMP*Math.cos(t*TAU/per+ph));
-     const g=ctx.createRadialGradient(x,y,0,x,y,m*.5);g.addColorStop(0,rgb(c,.16));g.addColorStop(1,rgb(c,0));ctx.fillStyle=g;ctx.fillRect(0,0,w,h)});
+   frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,P.c[0],.15));ctx.fillRect(0,0,w,h);const m=Math.max(w,h);
+    [[P.c[0],.3,.4,60,0],[P.c[3],.75,.6,70,2],[P.c[4],.5,.15,80,4]].forEach(([c,bx,by,per,ph])=>{const x=w*(bx+.1*AMP*Math.sin(t*TAU/per+ph)),y=h*(by+.08*AMP*Math.cos(t*TAU/per+ph));
+     const g=ctx.createRadialGradient(x,y,0,x,y,m*.5);g.addColorStop(0,rgb(c,.55));g.addColorStop(1,rgb(c,0));ctx.fillStyle=g;ctx.fillRect(0,0,w,h)});
     const sc=mix([215,222,235],P.c[1],.3);ctx.fillStyle=rgb(sc);
     for(const o of this.s){o.x-=o.z*7*AMP*dt;if(o.x<-2)o.x+=w+4;if(o.a<1)o.a=Math.min(1,o.a+rdt/3);
      ctx.globalAlpha=o.a*o.b*(.82+.18*Math.sin(t*TAU/o.tw+o.ph));
@@ -798,7 +837,7 @@ const FX={
     else for(const o of B){const k=1-Math.exp(-rdt*.15);o.b.tx=(o.b.tx||0)*(1-k);o.b.ty=(o.b.ty||0)*(1-k)}
     {const k2=1-Math.exp(-rdt*.5);for(const o of B){o.b.ox+=((o.b.tx||0)-o.b.ox)*k2;o.b.oy+=((o.b.ty||0)-o.b.oy)*k2}}
     const n=B.length,X=new Float32Array(n),Y=new Float32Array(n),R2=new Float32Array(n);B.forEach((o,i)=>{X[i]=o.x+o.b.ox;Y[i]=o.y+o.b.oy;R2[i]=o.r2});
-    let p=0;for(let y=0;y<gh;y++){const fy=y/gh,br=mix(bg,cA,.12+.22*fy);for(let x=0;x<gw;x++){let f=0;for(let i=0;i<n;i++){const dx=x-X[i],dy=y-Y[i];f+=R2[i]/(dx*dx+dy*dy+1)}
+    let p=0;for(let y=0;y<gh;y++){const fy=y/gh,br=mix(bg,cA,.3+.3*fy);for(let x=0;x<gw;x++){let f=0;for(let i=0;i<n;i++){const dx=x-X[i],dy=y-Y[i];f+=R2[i]/(dx*dx+dy*dy+1)}
      const v=f<.6?0:f>1.5?1:sm((f-.6)/.9),c=f<1.15?0:f>6?1:sm((f-1.15)/4.85);
      const r0=cA[0]+(cB[0]-cA[0])*c,g0=cA[1]+(cB[1]-cA[1])*c,b0=cA[2]+(cB[2]-cA[2])*c;
      d[p++]=br[0]+(r0-br[0])*v;d[p++]=br[1]+(g0-br[1])*v;d[p++]=br[2]+(b0-br[2])*v;d[p++]=255}}
@@ -808,17 +847,17 @@ const FX={
  pop:{name:'Pop grid',desc:'Press soft bubbles in and out',sound:'brown',soundName:'Brown noise',pal:'lilac',scale:1.5,fidget:true,
   make(){return{c:[],init(w,h){const L=w>=h,cols=L?8:5,rows=L?5:7,sz=Math.min(w*.88/cols,h*.78/rows),ox=(w-sz*cols)/2,oy=(h-sz*rows)/2;const old=this.c;this.c=[];this.bw=sz*cols;this.bh=sz*rows;this.ox=ox;this.oy=oy;this.sz=sz;
     for(let r=0;r<rows;r++)for(let q=0;q<cols;q++){const i=r*cols+q,o=old[i];this.c.push({x:ox+sz*(q+.5),y:oy+sz*(r+.5),r:sz*.36,v:o?o.v:0,t:o?o.t:0,ci:(q+r)%5})}},
-   frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,P.c[0],.2));ctx.fillRect(0,0,w,h);const pad=this.sz*.3;ctx.fillStyle=rgb(mix(P.bg,P.c[1],.42));
+   frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,P.c[0],.4));ctx.fillRect(0,0,w,h);const pad=this.sz*.3;ctx.fillStyle=rgb(mix(P.bg,P.c[1],.6));
     ctx.beginPath();if(ctx.roundRect)ctx.roundRect(this.ox-pad,this.oy-pad,this.bw+pad*2,this.bh+pad*2,this.sz*.4);else ctx.rect(this.ox-pad,this.oy-pad,this.bw+pad*2,this.bh+pad*2);ctx.fill();
-    const k=1-Math.exp(-rdt/.3);for(const o of this.c){o.v+=(o.t-o.v)*k;const c=mix(P.bg,P.c[o.ci],.75),lc=mix(c,[230,232,240],.3),dc=mix(c,[0,0,0],.35);
-     const g=ctx.createRadialGradient(o.x-o.r*.35*(1-2*o.v),o.y-o.r*.35*(1-2*o.v),o.r*.1,o.x,o.y,o.r);g.addColorStop(0,rgb(mix(lc,dc,o.v)));g.addColorStop(1,rgb(mix(dc,lc,o.v*.5)));
+    const k=1-Math.exp(-rdt/.3);for(const o of this.c){o.v+=(o.t-o.v)*k;const up=P.c[o.ci],lc=mix(up,[235,236,240],.35),dc=mix(mix(up,[70,72,80],.55),[0,0,0],.45); /* unpopped: full bright colour with a highlight; popped: dark, grey and pressed in */
+     const g=ctx.createRadialGradient(o.x-o.r*.35*(1-2*o.v),o.y-o.r*.35*(1-2*o.v),o.r*.1,o.x,o.y,o.r);g.addColorStop(0,rgb(mix(lc,dc,o.v)));g.addColorStop(1,rgb(mix(up,mix(dc,[0,0,0],.3),o.v)));
      ctx.fillStyle=g;ctx.beginPath();ctx.arc(o.x,o.y,o.r*(1-.06*o.v),0,TAU);ctx.fill()}},
    touch(x,y,k){if(k!=='down')return;for(const o of this.c)if(Math.hypot(x-o.x,y-o.y)<o.r*1.25){o.t=1-o.t;Sound.pop(o.t?300:360,o.t?220:270);return}}}}},
  spinner:{name:'Spinner',desc:'Drag to spin. It slows down by itself',sound:'brown',soundName:'Brown noise',pal:'blues',scale:1.5,fidget:true,moveGap:30,
   make(){return{a:0,w:0,dr:null,init(){},
-   frame(ctx,w,h,dt,t,P,rdt){const MAXW=.2*TAU; // at most 0.2 turns a second, so a lobe passes any spot under once a second
-    this.w=clamp(this.w,-MAXW,MAXW);this.w*=Math.exp(-rdt*.3);this.a+=this.w*rdt;ctx.fillStyle=rgb(mix(P.bg,P.c[0],.25));ctx.fillRect(0,0,w,h);
-    const cx=w/2,cy=h/2,R=Math.min(w,h)*.3,body=mix(P.bg,P.c[1],.5),lobe=mix(P.bg,P.c[2],.55),cap=mix(body,[220,226,235],.18);
+   frame(ctx,w,h,dt,t,P,rdt){const MAXW=.14*TAU; // at most 0.14 turns a second, so the lobes pass any spot well under twice a second
+    this.w=clamp(this.w,-MAXW,MAXW);this.w*=Math.exp(-rdt*.3);this.a+=this.w*rdt;ctx.fillStyle=rgb(mix(P.bg,P.c[0],.45));ctx.fillRect(0,0,w,h);
+    const cx=w/2,cy=h/2,R=Math.min(w,h)*.3,body=mix(P.bg,P.c[1],.9),lobe=mix(mix(P.bg,P.c[1],.9),P.c[2],.5),cap=mix(body,[220,226,235],.35);
     ctx.save();ctx.translate(cx,cy);ctx.rotate(this.a);ctx.fillStyle=rgb(body);
     for(let i=0;i<3;i++){const an=i*TAU/3,x=Math.cos(an)*R*.62,y=Math.sin(an)*R*.62;ctx.beginPath();ctx.arc(x,y,R*.38,0,TAU);ctx.fill()}
     ctx.beginPath();ctx.arc(0,0,R*.42,0,TAU);ctx.fill();ctx.fillStyle=rgb(lobe);
@@ -829,17 +868,17 @@ const FX={
  switches:{name:'Switches',desc:'Soft switches to flick on and off',sound:'brown',soundName:'Brown noise',pal:'greens',scale:1.5,fidget:true,
   make(){return{c:[],init(w,h){const L=w>=h,cols=L?4:2,rows=L?3:6,cw=w*.8/cols,chh=h*.76/rows,ox=(w-cw*cols)/2,oy=(h-chh*rows)/2,old=this.c;this.c=[];
     for(let r=0;r<rows;r++)for(let q=0;q<cols;q++){const i=r*cols+q,o=old[i];const sw=Math.min(cw*.7,chh*1.4),sh=Math.min(sw*.46,chh*.6);this.c.push({x:ox+cw*(q+.5),y:oy+chh*(r+.5),w:sw,h:sh,on:o?o.on:false,v:o?o.v:0,ci:(q+r)%5})}},
-   frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,P.c[0],.2));ctx.fillRect(0,0,w,h);const k=1-Math.exp(-rdt/.25);
-    for(const o of this.c){o.v+=((o.on?1:0)-o.v)*k;const tr=mix(mix(P.bg,P.c[0],.45),mix(P.bg,P.c[o.ci],.8),o.v),x0=o.x-o.w/2,y0=o.y-o.h/2,rr=o.h/2;
+   frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,P.c[0],.35));ctx.fillRect(0,0,w,h);const k=1-Math.exp(-rdt/.25);
+    for(const o of this.c){o.v+=((o.on?1:0)-o.v)*k;const tr=mix([38,42,50],P.c[o.ci],o.v), /* off: dark grey track; on: full colour */x0=o.x-o.w/2,y0=o.y-o.h/2,rr=o.h/2;
      ctx.fillStyle=rgb(tr);ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x0,y0,o.w,o.h,rr);else ctx.rect(x0,y0,o.w,o.h);ctx.fill();
-     ctx.fillStyle=rgb(mix([150,160,172],P.c[o.ci],.25));ctx.beginPath();ctx.arc(x0+rr+(o.w-2*rr)*sm(o.v),o.y,rr*.78,0,TAU);ctx.fill()}},
+     ctx.fillStyle=rgb(mix([215,220,228],P.c[o.ci],.15));ctx.beginPath();ctx.arc(x0+rr+(o.w-2*rr)*sm(o.v),o.y,rr*.78,0,TAU);ctx.fill()}},
    touch(x,y,k){if(k!=='down')return;for(const o of this.c)if(Math.abs(x-o.x)<o.w*.6&&Math.abs(y-o.y)<o.h*.9){o.on=!o.on;Sound.pop(o.on?420:340,o.on?330:260);return}}}}},
  squish:{name:'Squish',desc:'Press and stretch a soft blob',sound:'water',soundName:'Gentle water',pal:'warm',scale:1.5,fidget:true,moveGap:150,
   make(){return{n:72,r:null,pr:null,init(){if(!this.r)this.r=new Float32Array(this.n).fill(1)},
-   frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,P.c[0],.2));ctx.fillRect(0,0,w,h);const cx=w/2,cy=h/2,R=Math.min(w,h)*.3,n=this.n,pr=this.pr,live=pr&&performance.now()-pr.at<600;
+   frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,P.c[0],.4));ctx.fillRect(0,0,w,h);const cx=w/2,cy=h/2,R=Math.min(w,h)*.3,n=this.n,pr=this.pr,live=pr&&performance.now()-pr.at<600;
     const pa=live?Math.atan2(pr.y-cy,pr.x-cx):0,pd=live?clamp(Math.hypot(pr.x-cx,pr.y-cy)/R,.45,1.35):1,k=1-Math.exp(-rdt/(live?.9:1.6)),MAXD=.35*rdt; // shape changes slowly, whatever the finger does
     for(let i=0;i<n;i++){const an=i/n*TAU;let tg=1+.025*AMP*Math.sin(3*an+t*.4);if(live){let d=Math.abs(an-pa);d=Math.min(d,TAU-d);const f=Math.exp(-d*d/.18);tg=tg*(1-f)+pd*f}this.r[i]+=clamp((tg-this.r[i])*k,-MAXD,MAXD)}
-    const c=mix(P.bg,P.c[1],.8),lc=mix(c,[235,228,220],.22),g=ctx.createRadialGradient(cx-R*.3,cy-R*.35,R*.1,cx,cy,R*1.2);g.addColorStop(0,rgb(lc));g.addColorStop(1,rgb(mix(c,P.bg,.3)));
+    const c=P.c[1],lc=mix(c,[235,228,220],.3),g=ctx.createRadialGradient(cx-R*.3,cy-R*.35,R*.1,cx,cy,R*1.2);g.addColorStop(0,rgb(lc));g.addColorStop(1,rgb(mix(c,P.bg,.3)));
     ctx.fillStyle=g;ctx.beginPath();for(let i=0;i<=n;i++){const j=i%n,an=j/n*TAU,rr=R*this.r[j];const x=cx+Math.cos(an)*rr,y=cy+Math.sin(an)*rr;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath();ctx.fill()},
    touch(x,y,k,now){this.pr={x,y,at:performance.now()}}}}},
 };
@@ -860,10 +899,10 @@ const R={cv:$('#stage'),ctx:null,fx:null,id:null,run:false,raf:0,last:0,t:0,w:0,
   c.ba1+=((r.breathe?1:0)-c.ba1)*kb;c.ba+=(c.ba1-c.ba)*kb;
   for(let j=0;j<3;j++){c.P1.bg[j]+=(p.bgRGB[j]-c.P1.bg[j])*kp;c.P.bg[j]+=(c.P1.bg[j]-c.P.bg[j])*kp}
   c.P1.c.forEach((cc,i)=>{const q=c.P.c[i];for(let j=0;j<3;j++){cc[j]+=(p.cRGB[i][j]-cc[j])*kp;q[j]+=(cc[j]-q[j])*kp}});
-  r.fade=Math.min(1,r.fade+rdt/2);const dt=rdt*c.speed;r.t+=dt;const ctx=r.ctx;
+  r.fade=Math.min(1,r.fade+rdt/1.2);const dt=rdt*c.speed;r.t+=dt;const ctx=r.ctx;
   ctx.setTransform(r.sc,0,0,r.sc,0,0);ctx.globalAlpha=1;r.fx.frame(ctx,r.w,r.h,dt,r.t,c.P,rdt);
   if(c.ba>.003)r.drawBreath(ctx,rdt,c.ba);if(!r.breathe&&r.bphase){r.bphase='';$('#breathLabel').classList.remove('show')}
-  const b=clamp(c.bright,.25,.85)*sm(r.fade);ctx.fillStyle='rgba(0,0,0,'+(1-b).toFixed(4)+')';ctx.fillRect(0,0,r.w,r.h);
+  const b=clamp(c.bright,.25,.85)*(.7+.3*sm(r.fade)); // first frame already in colour; a quick lift, no black fade-inctx.fillStyle='rgba(0,0,0,'+(1-b).toFixed(4)+')';ctx.fillRect(0,0,r.w,r.h);
   if(r.onFrame)r.onFrame()},
  drawBreath(ctx,rdt,A){const g=prefs.gentler||RM.matches,ph=g?[5,2,7,2]:[4,1.5,6,1.5],tot=ph[0]+ph[1]+ph[2]+ph[3];this.bt=(this.bt+rdt)%tot;let t=this.bt,p,name;
   if(t<ph[0]){p=sm(t/ph[0]);name='Breathe in'}else if((t-=ph[0])<ph[1]){p=1;name='Hold'}else if((t-=ph[1])<ph[2]){p=1-sm(t/ph[2]);name='Breathe out'}else{p=0;name='Rest'}
@@ -909,7 +948,7 @@ const VG={at:-1e9,gap:1300,q:[],t:0,
 const navOK=()=>true;
 const nav=fn=>VG.run('nav',fn,true);
 const once=fn=>function(e){const self=this;nav(()=>fn.call(self,e))};
-function defaults(id){return{speed:prefs.pace==='veryslow'?.45:.75,bright:prefs.light==='brighter'?.7:.5,pal:FX[id].pal,sound:prefs.sound==='sound',vol:.4,breathe:!!prefs.breathe}}
+function defaults(id){return{speed:prefs.pace==='veryslow'?.45:.75,bright:vivid()?(prefs.light==='brighter'?.85:.78):(prefs.light==='brighter'?.7:.5),pal:FX[id].pal,sound:prefs.sound==='sound',vol:.6,breathe:!!prefs.breathe}}
 /* Small overlays (control bar, hint, toast) change at most once every 1.5 s each; a change that comes too soon is delayed, never dropped */
 function soft(el,cls,on){if(!el)return;if(!el.id)el.id='s'+Math.random().toString(36).slice(2);VG.run('soft:'+el.id,()=>{if(el.classList.contains(cls)===on)return false;el.classList.toggle(cls,on)})}
 function toast(msg,ms){const t=$('#toast');if(t.classList.contains('show')){t.textContent=msg}else{t.textContent=msg;soft(t,'show',true)}clearTimeout(toast.h);toast.h=setTimeout(()=>soft(t,'show',false),ms||3500)}
@@ -950,7 +989,7 @@ const SESS={};
 function openEffect(id,over,isCalm){if(classroom)return;Gate.close();curId=id;S=Object.assign(defaults(id),isCalm?{}:store.get('fx.'+id,{}),isCalm?{}:(SESS[id]||{}),over||{});delete S.effect;
  const D=defaults(id);if(!PALS[S.pal])S.pal=D.pal;['speed','bright','vol'].forEach(k=>{if(typeof S[k]!=='number'||!isFinite(S[k]))S[k]=D[k]});S.speed=clamp(S.speed,.2,1.5);S.bright=clamp(S.bright,.25,.85);S.vol=clamp(S.vol,0,1);S.sound=!!S.sound;S.breathe=!!S.breathe;
  R.tgt.pal=S.pal;R.tgt.speed=S.speed*gentleFactor();R.tgt.bright=S.bright;show('player');R.start(id);
- $('#stage').setAttribute('aria-label',FX[id].name+': '+FX[id].desc.toLowerCase()+'. Tap to show controls.');$('#fxTitle').textContent=FX[id].name;
+ $('#stage').setAttribute('aria-label',FX[id].name+': '+FX[id].desc.toLowerCase()+'. Tap to show controls.');$('#fxTitle').innerHTML=esc(FX[id].name)+(prefs.hush?'<span id="hushInScene">Hush is on: no sound</span>':'');
  lockAdult();apply();syncControls();showBar(true);if(prefs.awake)Wake.on()}
 function apply(persist){R.tgt.pal=S.pal;R.tgt.speed=clamp(S.speed,.2,1.5)*gentleFactor();R.tgt.bright=clamp(S.bright,.25,.85);R.breathe=!!S.breathe;
  Sound.setVol(S.vol);if(S.sound){Sound.ensure();Sound.want(FX[curId].sound)}else Sound.want(null);
@@ -1038,7 +1077,7 @@ const Gate={cb:null,t:0,ht:0,cool:0,ans:0,q:0,shownAt:0,
 
 /* ---------- How I feel ---------- */
 const FEEL=[
- {k:'over',t:'Too much',s:'Everything is loud',fx:'stars',o:{pal:'mono',bright:.3,speed:.35,sound:false},svg:'<g fill="#8fa3b8"><circle cx="16" cy="18" r="4"/><circle cx="34" cy="12" r="3"/><circle cx="50" cy="22" r="5"/><circle cx="24" cy="38" r="5"/><circle cx="44" cy="42" r="3"/><circle cx="14" cy="52" r="3"/><circle cx="52" cy="52" r="4"/><circle cx="32" cy="54" r="2"/></g>'},
+ {k:'over',t:'Too much',s:'Everything is loud',fx:'stars',o:{pal:'blues',speed:.35,sound:false},svg:'<g fill="#8fa3b8"><circle cx="16" cy="18" r="4"/><circle cx="34" cy="12" r="3"/><circle cx="50" cy="22" r="5"/><circle cx="24" cy="38" r="5"/><circle cx="44" cy="42" r="3"/><circle cx="14" cy="52" r="3"/><circle cx="52" cy="52" r="4"/><circle cx="32" cy="54" r="2"/></g>'},
  {k:'worry',t:'Worried',s:'Busy thoughts',fx:'wash',o:{pal:'blues',breathe:true},svg:'<path d="M6 32c6-10 12-10 18 0s12 10 18 0 12-10 16 0" fill="none" stroke="#8fb0d4" stroke-width="4" stroke-linecap="round"/>'},
  {k:'restless',t:'Restless',s:'Want something to do',fx:'bubbles',o:{pal:'greens'},svg:'<g fill="none" stroke="#8fc0a8" stroke-width="3"><circle cx="22" cy="40" r="12"/><circle cx="44" cy="22" r="8"/><circle cx="46" cy="48" r="5"/></g>'},
  {k:'fidgety',t:'Fidgety hands',s:'Need to press something',fx:'pop',o:{},svg:'<g fill="#a99cc8"><circle cx="20" cy="22" r="8"/><circle cx="44" cy="22" r="8" opacity=".5"/><circle cx="20" cy="44" r="8" opacity=".5"/><circle cx="44" cy="44" r="8"/></g>'},
@@ -1050,9 +1089,9 @@ const FEEL=[
  b.setAttribute('aria-label',f.t+'. '+f.s+'. Opens '+FX[f.fx].name.toLowerCase());b.onclick=once(()=>{openEffect(f.fx,f.o);toast('Try '+FX[f.fx].name.toLowerCase()+'. Change anything you like.')});g.appendChild(b)})})();
 
 /* ---------- Preferences (reached only through the adult gate) ---------- */
-function syncPrefs(){['sound','light','pace','idle','grid','select','mode','gate','cardTap','slots','timerSpeak','textSize'].forEach(k=>document.querySelectorAll('[name=p_'+k+']').forEach(i=>i.checked=i.value===String(prefs[k])));
+function syncPrefs(){['sound','light','pace','idle','grid','select','mode','gate','cardTap','slots','timerSpeak','textSize','colour'].forEach(k=>document.querySelectorAll('[name=p_'+k+']').forEach(i=>i.checked=i.value===String(prefs[k])));
  setSwitch($('#p_gentler'),prefs.gentler);setSwitch($('#p_breathe'),prefs.breathe);setSwitch($('#p_awake'),prefs.awake);setSwitch($('#p_speak'),prefs.speak);setSwitch($('#p_hc'),prefs.hc);setSwitch($('#p_haptic'),prefs.haptic);setSwitch($('#p_hush'),prefs.hush);setSwitch($('#p_dim'),!!prefs.dimCards);voiceNote();$('#lastBk').textContent='Last backup: '+(prefs.lastBackup?ago(prefs.lastBackup):'never')+'.';setSwitch($('#p_hushTalk'),prefs.hushTalk);setSwitch($('#p_info'),prefs.infoSpeak);$('#bkConfirm').hidden=true;$('#p_svol').value=prefs.speakVol;$('#v_svol').textContent=pct(prefs.speakVol);$('#rmNote').hidden=!RM.matches}
-document.querySelectorAll('#prefs input[type=radio]').forEach(i=>i.addEventListener('change',()=>{const k=i.name.slice(2);prefs[k]=(k==='idle'||k==='slots'||k==='textSize')?+i.value:i.value;if(k==='grid')drawCards();if(k==='slots'){strip=strip.slice(0,SLOTS());drawStrip()}if(k==='mode'){buildCards();drawDay()}if(k==='textSize'||k==='mode')applyLook();store.set('prefs',prefs);toast('Saved')}));
+document.querySelectorAll('#prefs input[type=radio]').forEach(i=>i.addEventListener('change',()=>{const k=i.name.slice(2);prefs[k]=(k==='idle'||k==='slots'||k==='textSize')?+i.value:i.value;if(k==='grid')drawCards();if(k==='cardTap')drawHint();if(k==='colour'){buildPals();if(S)S.bright=defaults(curId||'wash').bright}if(k==='slots'){strip=strip.slice(0,SLOTS());drawStrip()}if(k==='mode'){buildCards();drawDay()}if(k==='textSize'||k==='mode')applyLook();store.set('prefs',prefs);toast('Saved')}));
 $('#p_gentler').onclick=()=>{prefs.gentler=!prefs.gentler;store.set('prefs',prefs);updAmp();syncPrefs()};
 $('#p_breathe').onclick=()=>{prefs.breathe=!prefs.breathe;store.set('prefs',prefs);syncPrefs()};
 $('#p_awake').onclick=()=>{prefs.awake=!prefs.awake;store.set('prefs',prefs);syncPrefs()};
@@ -1080,7 +1119,7 @@ const OBQ=[
  {k:'profile',q:'What usually helps?',o:[['quiet','Quiet and still','Silence, dim light, very slow movement. Talk cards still speak.','<path d="M8 36c16-6 32-6 48 0" fill="none" stroke="#8fb0d4" stroke-width="4" stroke-linecap="round"/>'],['more','A bit more to see and hear','Gentle sound, a little brighter (still dim)','<circle cx="22" cy="32" r="10" fill="#8fb0d4"/><path d="M40 24c4 5 4 11 0 16M46 19c7 8 7 18 0 26" fill="none" stroke="#8fb0d4" stroke-width="3" stroke-linecap="round"/>'],['choose','Let me choose','Three quick questions','<path d="M14 20h36M14 32h36M14 44h24" stroke="#a9b3be" stroke-width="4" stroke-linecap="round"/>']]},
  {k:'sound',q:'Do you prefer sound or silence?',o:[['silence','Silence','Scene sound and spoken feedback stay off. Talk cards still speak.','<path d="M14 26h10l12-10v32L24 38H14z" fill="#a9b3be"/><path d="M44 24l12 16M56 24L44 40" stroke="#a9b3be" stroke-width="3" stroke-linecap="round"/>'],
    ['sound','Gentle sound','Soft sounds fade in when a scene opens','<path d="M14 26h10l12-10v32L24 38H14z" fill="#8fb0d4"/><path d="M44 24c4 5 4 11 0 16M50 19c7 8 7 18 0 26" fill="none" stroke="#8fb0d4" stroke-width="3" stroke-linecap="round"/>']]},
- {k:'light',q:'How bright do you like it?',o:[['dim','Dim','Low light, like a night light','<circle cx="32" cy="32" r="14" fill="#56677a"/>'],['brighter','A little brighter','Still soft, never bright white','<circle cx="32" cy="32" r="14" fill="#9fb2c6"/><g stroke="#9fb2c6" stroke-width="3" stroke-linecap="round"><path d="M32 8v6M32 50v6M8 32h6M50 32h6"/></g>']]},
+ {k:'light',q:'How bright do you like it?',o:[['dim','Dim','Low light, like a night light','<circle cx="32" cy="32" r="14" fill="#56677a"/>'],['brighter','Brighter','Rich colour, never bright white','<circle cx="32" cy="32" r="14" fill="#9fb2c6"/><g stroke="#9fb2c6" stroke-width="3" stroke-linecap="round"><path d="M32 8v6M32 50v6M8 32h6M50 32h6"/></g>']]},
  {k:'pace',q:'How fast should things move?',o:[['slow','Slow','Gentle, steady movement','<path d="M8 40c10-16 20-16 30 0" fill="none" stroke="#8fb0d4" stroke-width="4" stroke-linecap="round"/>'],['veryslow','Very slow','Barely moving','<path d="M8 36c16-6 32-6 48 0" fill="none" stroke="#8fb0d4" stroke-width="4" stroke-linecap="round"/>']]}];
 let obAt=-1e9;
 function startOnboarding(){show('onboard');obStep(-1,true)}
@@ -1102,7 +1141,7 @@ const ICON={yes:'<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M14 34l12 
  no:'<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 18l28 28M46 18L18 46" fill="none" stroke="#11161b" stroke-width="8" stroke-linecap="round"/></svg>',
  dontknow:'<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M22 24a10 10 0 1 1 14 9c-3 1.5-4 3.5-4 7" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><circle cx="32" cy="50" r="4" fill="currentColor"/></svg>',
  wait:'<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M20 10h24M20 54h24M22 10c0 14 20 14 20 22S22 40 22 54M42 10c0 14-20 14-20 22s20 8 20 22" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg>'};
-const QUICK={yes:{label:'Yes',say:'Yes'},no:{label:'No',say:'No'},dontknow:{label:"I don't know",say:"I don't know"},wait:{label:'Wait',say:'Wait please'}};
+const QUICK={yes:{label:'Yes',say:'Yes'},no:{label:'No',say:'No'},dontknow:{label:"I don't know",say:"I don't know"},wait:{label:'Wait',say:'Wait'}};
 const CARDS=[['i_want','I want',1],['i_need','I need',1],['i_feel','I feel',1],['toilet','Toilet'],['drink','Drink'],['hungry','Hungry'],['outside','Outside'],['brk','Break','I need a break'],
   ['loud','Too loud'],['hurt','Hurt'],['help','Help'],['yes','Yes'],['no','No'],['more','More'],['finished','Finished'],['hug','Hug'],['tired','Tired'],['home','Home'],['play','Play'],['quiet','Quiet'],
   ['like','Like','I like it'],['dislike',"Don't like","I don't like it"],['stop','Stop'],['go','Go'],['again','Again'],['look','Look'],['myturn','My turn'],['please','Please'],['thanks','Thank you'],['hello','Hello'],['bye','Bye'],['open','Open'],['me','Me'],['you','You'],
@@ -1111,12 +1150,12 @@ const CARDS=[['i_want','I want',1],['i_need','I need',1],['i_feel','I feel',1],[
   ['tea','Cup of tea'],['water','Water'],['juice','Juice'],['milk','Milk'],['toast','Toast'],['biscuit','Biscuit'],['crisps','Crisps'],['fruit','Fruit'],['apple','Apple'],['banana','Banana'],['sandwich','Sandwich'],['pasta','Pasta'],['chips','Chips'],['yoghurt','Yoghurt'],['snack','Snack'],['breakfast','Breakfast'],['lunch','Lunch'],['dinner','Dinner'],
   ['school','School'],['garden','Garden'],['bedroom','Bedroom'],['shop','Shop'],['pool','Swimming'],['beach','Beach'],['doctor','Doctor'],['car','Car'],
   ['tablet','Tablet'],['tv','TV'],['music','Music'],['swing','Swing'],['trampoline','Trampoline'],['walk','Walk'],['draw','Draw'],['book','Book'],['bubbles','Bubbles'],['blocks','Blocks'],['teddy','Teddy'],['bike','Bike'],['bath','Bath'],['sleep','Sleep'],['story','Story']]
-  .map(([id,label,a,b])=>({id,label,starter:a===1,say:typeof a==='string'?a:label}));
+  .map(([id,label,a,b])=>({id,label,starter:a===1,say:label})); // what is spoken is exactly what the card and strip show
 /* Card groups. Core words keep the same place every time (motor planning). */
 const CATS=[{k:'core',name:'Core',ids:['i_want','i_need','i_feel','yes','no','more','finished','help','stop','go','like','dislike','again','look','myturn','me','you','please','thanks','hello','bye','open','toilet','drink','hungry','brk','loud','hurt','tired','hug','play','outside','home','quiet'].filter(id=>id!=='yes'&&id!=='no') /* Yes and No live in the quick bar, with one consistent icon */},
  {k:'feel',name:'Feelings',ids:['happy','sad','angry','scared','worried','calm','excited','bored','tired','poorly','hurt','loud','quiet','hug','brk','help']},
  {k:'people',name:'People',ids:['me','you','mum','dad','nan','grandad','brother','sister','friend','teacher']},
- {k:'food',name:'Food & drink',ids:['hungry','drink','tea','water','juice','milk','toast','biscuit','crisps','fruit','apple','banana','sandwich','pasta','chips','yoghurt','snack','breakfast','lunch','dinner','more','finished']},
+ {k:'food',name:'Food & drink',ids:['hungry','drink','tea','water','juice','milk','toast','biscuit','crisps','fruit','apple','banana','sandwich','pasta','chips','yoghurt','snack','breakfast','lunch','dinner','finished']} /* More lives in Core only */,
  {k:'places',name:'Places',ids:['home','school','outside','garden','bedroom','shop','pool','beach','doctor','car','toilet']},
  {k:'do',name:'Things to do',ids:['play','tablet','tv','music','swing','trampoline','walk','draw','book','bubbles','blocks','teddy','bike','bath','sleep','story']},
  {k:'mine',name:'My cards',ids:null}];
@@ -1127,6 +1166,7 @@ const SELFW={poorly:['Unwell','I feel unwell'],angry:['Angry','I feel angry'],te
 function eff(c){if(!c)return c;if(prefs.mode==='self'&&c.id in SELFW&&!edits[c.id]){const w=SELFW[c.id];c=w?Object.assign({},c,{label:w[0],say:w[1]}):Object.assign({},c,{hidden:true})}const e=edits[c.id];if(!e)return c;return Object.assign({},c,{label:e.label||c.label,say:e.say||(e.label?e.label:c.say),hidden:!!e.hidden})}
 const RPICS=[['wake','Wake up'],['dressed','Get dressed'],['breakfast','Breakfast'],['teeth','Brush teeth'],['school','School'],['lunch','Lunch'],['snack','Snack'],['play','Play'],['outside','Outside'],
  ['car','Car'],['shopping','Shopping'],['tv','TV'],['dinner','Dinner'],['bath','Bath'],['story','Story'],['bed','Bed'],['brk','Break'],['quiet','Quiet time'],['toilet','Toilet'],['home','Home']].map(([id,label])=>({id,label,say:label}));
+const DDUR={teeth:2,play:10,bath:10}; // a few timed steps by default, so the timer is easy to find
 const DEFAULT_DAY=['wake','dressed','breakfast','teeth','school','lunch','play','dinner','bath','story','bed'];
 let OWN=[]; // adult-added photo cards, from IndexedDB
 let MY=(store.get('mycards',[])||[]).filter(c=>c&&PIC[c.pic]&&typeof c.label==='string'); // adult-added cards from the built-in symbols
@@ -1135,7 +1175,7 @@ const findPic=id=>eff(RPICS.find(p=>p.id===id)||CARDS.find(p=>p.id===id)||OWN.fi
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 /* Speech: one utterance at a time (each new one cancels the last), debounced, gentle rate, volume capped */
-const Speak={t:0,MAXV:.7,ok:()=>'speechSynthesis'in window,
+const Speak={t:0,MAXV:1,ok:()=>'speechSynthesis'in window,
  voice(){try{const vs=speechSynthesis.getVoices();return vs.find(v=>v.lang==='en-GB'&&/female|serena|kate|libby|sonia|martha|uk english/i.test(v.name))||vs.find(v=>v.lang==='en-GB')||vs.find(v=>/^en/i.test(v.lang))||null}catch(e){return null}},
  say(text,kind){kind=kind||'talk';if(!prefs.speak||!this.ok()||!text)return;if(kind==='talk'){if(prefs.hush&&prefs.hushTalk)return}else if(prefs.hush||!prefs.infoSpeak)return;/* Hush never silences the user's own talk cards unless an adult chose that */clearTimeout(this.t);try{speechSynthesis.cancel()}catch(e){}
   this.t=setTimeout(()=>{try{const u=new SpeechSynthesisUtterance(text);u.lang='en-GB';const v=this.voice();if(v)u.voice=v;u.rate=.85;u.pitch=1;u.volume=clamp(+prefs.speakVol||0,0,1)*this.MAXV;speechSynthesis.speak(u)}catch(e){}},280)},
@@ -1171,7 +1211,13 @@ function catCards(k){const C=CATS.find(c=>c.k===k)||CATS[0];const list=C.ids?C.i
 function drawTabs(){const t=$('#tabs');t.innerHTML='';CATS.forEach(C=>{const b=document.createElement('button');b.className='btn';b.setAttribute('role','tab');b.setAttribute('aria-controls','cards');b.tabIndex=C.k===cat?0:-1;b.setAttribute('aria-selected',C.k===cat?'true':'false');b.textContent=C.name;
  b.onkeydown=e=>{const L=[...t.children],i=L.indexOf(b);let j=-1;if(e.key==='ArrowRight')j=(i+1)%L.length;else if(e.key==='ArrowLeft')j=(i-1+L.length)%L.length;else if(e.key==='Home')j=0;else if(e.key==='End')j=L.length-1;if(j<0)return;e.preventDefault();L[j].focus();L[j].click()};
  b.onclick=()=>{if(C.k===cat)return;cat=C.k;store.set('talkCat',cat);VG.run('tab',()=>{drawTabs();drawCards()})};t.appendChild(b)})}
-function buildCards(){drawTabs();drawCards();drawFavs();requestAnimationFrame(fitCards)}
+/* A calm, static tip on Talk explaining what a tap does; wording follows the card-tap setting. Hiding it is queued like any other change, and an adult can bring it back. */
+const TAPHINT={add:'Tap cards to build what you want to say.',quiet:'Tap cards to build what you want to say. Tap "Say it" to hear it.',big:'Tap a card to show it big. Tap anywhere to close it.'};
+function drawHint(){$('#tapHintTxt').textContent=TAPHINT[prefs.cardTap]||TAPHINT.add;$('#tapHint').hidden=store.get('tapHint',true)===false}
+$('#tapHintX').onclick=()=>{store.set('tapHint',false);VG.run('hint:tap',drawHint)};
+$('#tapHintBack').onclick=()=>{store.set('tapHint',true);drawHint();toast('The tip is back on Talk')};
+document.querySelectorAll('[name=t_cardTap]').forEach(i=>i.addEventListener('change',()=>{prefs.cardTap=i.value;store.set('prefs',prefs);drawHint();toast('Saved')}));
+function buildCards(){drawHint();document.querySelectorAll('[name=t_cardTap]').forEach(i=>i.checked=i.value===(prefs.cardTap||'add'));drawTabs();drawCards();drawFavs();requestAnimationFrame(fitCards)}
 /* Make "N per screen" fill the space left on screen: rows share the height under the strip */
 function fitCards(){const g=$('#cards');if(!g||prefs.grid==='auto'||active()!=='talk')return;const rows={2:1,4:2,6:2,9:3,16:4}[prefs.grid]||2,cols={2:2,4:2,6:3,9:3,16:4}[prefs.grid]||2;
  g.style.gridTemplateColumns='repeat('+cols+',1fr)';const top=g.getBoundingClientRect().top+scrollY,gap=parseFloat(getComputedStyle(g).rowGap)||8;
@@ -1191,18 +1237,22 @@ function drawFavs(){const w=$('#favs');w.innerHTML='';favs.forEach(f=>{const cs=
  act(b,()=>Big.open('<div class="bigrow">'+cs.map(c=>'<div>'+cardHTML(c)+'</div>').join('')+'</div>','',cs.map(c=>c.say).join(' ')));w.appendChild(b)})}
 /* A card tap: 'big' always shows it big; 'add' always adds to the sentence; 'auto' (default) adds once a sentence has started
    with a starter (I want / I need / I feel...), otherwise shows it big. A repeat tap on the same card within 1 s is ignored. */
-function tapCard(c){const n=performance.now();if(c.id===tapCard.last&&n-cardAt<1000)return;cardAt=n;tapCard.last=c.id;
- const m=prefs.cardTap||'auto',add=m==='add'||(m==='auto'&&(c.starter||(strip.length&&strip[0].starter)));
- if(m!=='big'&&c.starter&&strip.length&&!strip[0].starter)strip=[]; // a starter begins a fresh sentence
- const full=strip.length>=SLOTS();if(full)strip[strip.length-1]=c;else strip.push(c);
- if(add){Speak.say(c.say);if(full)toast('The sentence is full, so the last card was swapped. Tap "Say it".')}else Big.open(cardHTML(c),'',c.say);
- VG.run('strip',drawStrip)}
-const SLOTS=()=>clamp(+prefs.slots||3,3,6);
+/* One rule (default): every tap says the card and adds it to the strip. Adult options: add without speaking, or always show big.
+   A quick repeat tap on the same card is not added twice, but it is said again and a short note shows it was heard.
+   When the strip is full nothing is replaced: the card is said, and "Say it" is highlighted. */
+function tapCard(c){const n=performance.now(),m=prefs.cardTap||'add';
+ if(m==='big'){if(c.id===tapCard.last&&n-cardAt<1000)return;cardAt=n;tapCard.last=c.id;Big.open(cardHTML(c),'',c.say);return}
+ if(c.id===tapCard.last&&n-cardAt<1000){cardAt=n;if(m==='add')Speak.say(c.say);toast(c.label+': already added');return}
+ cardAt=n;tapCard.last=c.id;if(m==='add')Speak.say(c.say);
+ if(strip.length>=SLOTS()){if(!tapCard.fullTold){tapCard.fullTold=1;toast('Full. Tap Say it.')}VG.run('strip',drawStrip);return}
+ strip.push(c);VG.run('strip',drawStrip)}
+const SLOTS=()=>clamp(+prefs.slots||5,3,6);
 const ago=t=>{const d=Math.floor((Date.now()-t)/864e5);return d<1?'today':d===1?'yesterday':d<14?d+' days ago':Math.floor(d/7)+' weeks ago'};
-function drawStrip(){const s=$('#slots');s.innerHTML='';s.dataset.n=SLOTS();for(let i=0;i<SLOTS();i++){const c=strip[i],d=document.createElement('div');d.className='slot'+(c?'':' empty');d.innerHTML=c?'<img alt="" src="'+picSrc(c.id)+'"><span>'+esc(c.label)+'</span>':'';s.appendChild(d)}
+function drawStrip(){if(strip.length<SLOTS())tapCard.fullTold=0;$('#sayStrip').classList.toggle('ready',strip.length>=SLOTS());$('#bigStrip').disabled=!strip.length;const s=$('#slots');s.innerHTML='';s.dataset.n=SLOTS();for(let i=0;i<SLOTS();i++){const c=strip[i],d=document.createElement('div');d.className='slot'+(c?'':' empty');d.innerHTML=c?'<img alt="" src="'+picSrc(c.id)+'"><span>'+esc(c.label)+'</span>':'';s.appendChild(d)}
  $('#slots').setAttribute('aria-label',strip.length?'Sentence: '+strip.map(c=>c.label).join(' '):'Sentence strip, empty')}
-act($('#sayStrip'),()=>{if(!strip.length)return;Big.open('<div class="bigrow">'+strip.map(c=>'<div>'+cardHTML(c)+'</div>').join('')+'</div>','',strip.map(c=>c.say).join(' '))});
-twoStep($('#keepStrip'),'Keep','',()=>{if(!strip.length)return;const ids=strip.map(c=>c.id),key=ids.join('|');if(favs.some(f=>f.join('|')===key)){toast('Already kept');return}
+act($('#sayStrip'),()=>{if(!strip.length)return;Speak.say(strip.map(c=>c.say).join(' '))});
+act($('#bigStrip'),()=>{if(!strip.length)return;Big.open('<div class="bigrow">'+strip.map(c=>'<div>'+cardHTML(c)+'</div>').join('')+'</div>','',strip.map(c=>c.say).join(' '))});
+act($('#keepStrip'),()=>{if(!strip.length)return;const ids=strip.map(c=>c.id),key=ids.join('|');if(favs.some(f=>f.join('|')===key)){toast('Already kept');return}
  if(favs.length>=8){toast('8 phrases kept already. An adult can remove some.');return}favs.push(ids);store.set('favs',favs);VG.run('favs',drawFavs);toast('Kept. Tap it any time to say it again.')});
 $('#clearStrip').onclick=()=>{if(!strip.length)return;strip=[];VG.run('strip',drawStrip)};
 $('#undoStrip').onclick=()=>{if(!strip.length)return;strip.pop();VG.run('strip',drawStrip)};
@@ -1245,25 +1295,25 @@ $('#cardEditDone').onclick=()=>{$('#cardEdit').hidden=true;$('#vocabList').hidde
 
 /* My day: Now / Next / Later + picture timetable. Ticks reset each day. Editing needs the adult gate. */
 const today=()=>new Date().toDateString();
-function getDay(){let d=store.get('day',null);if(!d||!Array.isArray(d.items))d={items:DEFAULT_DAY.map(id=>({id,time:''})),date:today(),done:[]};
+function getDay(){let d=store.get('day',null);if(!d||!Array.isArray(d.items))d={items:DEFAULT_DAY.map(id=>({id,time:'',dur:DDUR[id]||0})),date:today(),done:[]};
  d.items=d.items.filter(x=>x&&findPic(x.id)||(x&&x.id&&String(x.id).indexOf('own_')===0));if(d.date!==today()){d.date=today();d.done=[]}d.done=(d.done||[]).filter(i=>i<d.items.length);return d}
 function saveDay(d){store.set('day',d)}
 const ROUT={school:'School day',weekend:'Weekend',bedtime:'Bedtime'};
 const rName=k=>prefs.mode==='self'?({school:'Weekday',weekend:'Weekend',bedtime:'Evening'}[k]):ROUT[k];
 const ROUT0={school:DEFAULT_DAY,weekend:['wake','dressed','breakfast','play','outside','lunch','tv','snack','dinner','bath','story','bed'],bedtime:['dinner','toilet','bath','teeth','story','bed']};
-function routines(){let r=store.get('routines',null);if(!r||!r.sets||!ROUT[r.cur]){r={cur:'school',sets:{}};}for(const k in ROUT)if(!Array.isArray(r.sets[k]))r.sets[k]=k===r.cur?getDay().items:ROUT0[k].map(id=>({id,time:''}));return r}
+function routines(){let r=store.get('routines',null);if(!r||!r.sets||!ROUT[r.cur]){r={cur:'school',sets:{}};}for(const k in ROUT)if(!Array.isArray(r.sets[k]))r.sets[k]=k===r.cur?getDay().items:ROUT0[k].map(id=>({id,time:'',dur:DDUR[id]||0}));return r}
 function useRoutine(k){if(!ROUT[k])return;const r=routines(),d=getDay();r.sets[r.cur]=d.items;r.cur=k;d.items=r.sets[k].map(x=>Object.assign({},x));d.done=[];saveDay(d);store.set('routines',r);Timer.stop(true);store.del('ft')}
 /* Gentle visual timer: a ring that slowly empties. No ticking, no flashing, no alarm; a soft spoken note near the end and at the end. */
 const Timer={st:store.get('timer',null),iv:0,
  note(msg){const a=active();if(a==='player')return; // never over a scene
   if(a==='day'&&!document.hidden&&prefs.timerSpeak==='spoken'&&!this.quiet)Speak.say(msg,'timer');else if(a!=='onboard')toast(msg,5000)},
- start(i){const d=getDay(),x=d.items[i];if(!x||!x.dur)return;this.st={i,id:x.id,start:Date.now(),dur:x.dur*60000,warned:false,ended:false};store.set('timer',this.st);this.run();this.draw(true)},
+ start(i,mins){const d=getDay(),x=d.items[i],m=mins||(x&&x.dur);if(!x||!m)return;this.st={i,id:x.id,start:Date.now(),dur:m*60000,warned:false,ended:false};store.set('timer',this.st);this.run();this.draw(true)},
  stop(quiet){this.st=null;store.del('timer');clearInterval(this.iv);this.iv=0;if(!quiet)this.draw(true)},
  run(){clearInterval(this.iv);this.iv=setInterval(()=>this.draw(false),1000)},
  left(){return this.st?Math.max(0,this.st.dur-(Date.now()-this.st.start)):0},
  draw(full){const box=$('#timerBox');if(!box)return;const d=getDay(),items=d.items.map((x,i)=>({...x,i,p:findPic(x.id)})).filter(x=>x.p),todo=items.filter(x=>d.done.indexOf(x.i)<0),now=todo[0],next=todo[1];
   if(this.st&&(!now||now.i!==this.st.i||now.id!==this.st.id)){this.stop(true)}
-  if(!this.st){clearInterval(this.iv);this.iv=0;if(now&&now.dur){box.hidden=false;if(full||box.dataset.m!=='idle'){box.dataset.m='idle';box.innerHTML='<div class="tx">'+esc(now.p.label)+' has a '+now.dur+' minute timer<small>Starts when you are ready</small></div><button class="btn primary" id="tStart">Start timer</button>';$('#tStart').onclick=()=>this.start(now.i)}}else{box.hidden=true;box.dataset.m=''}return}
+  if(!this.st){clearInterval(this.iv);this.iv=0;if(now&&now.dur){box.hidden=false;if(full||box.dataset.m!=='idle'){box.dataset.m='idle';box.innerHTML='<div class="tx">'+esc(now.p.label)+' has a '+now.dur+' minute timer<small>Starts when you are ready</small></div><button class="btn primary" id="tStart">Start timer</button>';$('#tStart').onclick=()=>this.start(now.i)}}else if(now){box.hidden=false;if(full||box.dataset.m!=='offer'){box.dataset.m='offer';box.innerHTML='<div class="tx">Timer for '+esc(now.p.label)+'?<small>Pick how long</small></div><button class="btn" data-tm="2">2 min</button><button class="btn" data-tm="5">5 min</button><button class="btn" data-tm="10">10 min</button>';box.querySelectorAll('[data-tm]').forEach(b=>b.onclick=()=>{this.start(now.i,+b.dataset.tm) /* a one-off timer: the routine itself is not changed */})}}else{box.hidden=true;box.dataset.m=''}return}
   const L=this.left(),f=L/this.st.dur,C=2*Math.PI*44,mins=Math.ceil(L/60000),warnAt=this.st.dur>5*60000?5*60000:this.st.dur>60000?60000:0;
   if(box.dataset.m!=='run'){box.hidden=false;box.dataset.m='run';box.innerHTML='<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="none" stroke="#2e3a48" stroke-width="9"/><circle class="ring" cx="50" cy="50" r="44" fill="none" stroke="#7d9cc0" stroke-width="9" stroke-linecap="round" transform="rotate(-90 50 50)" stroke-dasharray="'+C.toFixed(1)+'"/></svg><div class="tx" id="tTx" aria-live="polite"></div><button class="btn" id="tStop">Stop timer</button>';twoStep($('#tStop'),'Stop timer','',()=>this.stop())}
   box.querySelector('.ring').setAttribute('stroke-dashoffset',(C*(1-f)).toFixed(1));
@@ -1275,12 +1325,13 @@ if(Timer.st){const L=Timer.left(),w=Timer.st.dur>5*60000?5*60000:Timer.st.dur>60
 function ftPair(){const d=getDay(),items=d.items.map((x,i)=>({...x,i,p:findPic(x.id)})).filter(x=>x.p),todo=items.filter(x=>d.done.indexOf(x.i)<0);const ft=store.get('ft',{})||{};
  const F=ft.first&&findPic(ft.first)?findPic(ft.first):(todo[0]&&todo[0].p),T=ft.then&&findPic(ft.then)?findPic(ft.then):(todo[1]&&todo[1].p);return{F,T,done:!!ft.done&&ft.date===today(),own:!!(ft.first||ft.then)}}
 function drawFT(){const {F,T,done}=ftPair(),el=$('#ft');const card=(c,cls,hd)=>'<div class="col '+cls+'"><div class="hd">'+hd+'</div>'+(c?'<button class="pcard" data-ft="'+cls+'" aria-label="'+hd+': '+esc(c.label)+'"><img alt="" src="'+picSrc(c.id)+'"><span>'+esc(c.label)+'</span></button>':'<div class="pcard" style="opacity:.6">&nbsp;</div>')+'</div>';
- el.innerHTML=card(F,'first'+(done?' isdone':''),'First')+'<svg class="arrow" width="60" height="60" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 32h40M36 18l14 14-14 14" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>'+card(T,'then','Then');
- const fb=el.querySelector('[data-ft^=first]'),tb=el.querySelector('[data-ft=then]');
+ el.innerHTML=card(F,'first'+(done?' isdone':''),'First')+'<svg class="arrow" width="60" height="60" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 32h40M36 18l14 14-14 14" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>'+card(T,'then','Then')+(F?'<button class="btn '+(done?'':'primary')+'" id="ftDone" style="flex:1 1 100%">'+(done?'&#8630; Undo: '+esc(F.label)+' is not done':esc(F.label)+' is done &#10003;')+'</button>':'');
+ const fb=$('#ftDone'),tb=el.querySelector('[data-ft=then]'),fc=el.querySelector('[data-ft^=first]');
+ if(fc)act(fc,()=>Big.open(cardHTML(F),'',F.say));
  if(fb)act(fb,()=>{if(tapSame('ft'))return;const P=ftPair();if(P.done!==done||!P.F||P.F.id!==F.id)return;const d=getDay(),on=!done;
   const idx=d.items.findIndex((x,i)=>x.id===F.id&&(on?d.done.indexOf(i)<0:d.done.indexOf(i)>=0));if(idx>=0){if(on)d.done.push(idx);else d.done.splice(d.done.indexOf(idx),1);saveDay(d)} // keeps My day ticks in step
   if(P.own||idx<0){const ft=store.get('ft',{})||{};ft.done=on;ft.date=today();store.set('ft',ft)}
-  if(on)Speak.say('Finished. Now '+(T?T.say:''),'info');VG.run('ft',()=>{drawFT();drawDay()})});
+  if(on)Speak.say(F.label+', done. Now '+(T?T.say:''),'talk');VG.run('ft',()=>{drawFT();drawDay()})});
  if(tb)act(tb,()=>{Big.open(cardHTML(T),'',T.say)})}
 let dayView='nnl';
 function setDayView(v){if(v===dayView)return;VG.run('dayview',()=>{dayView=v;$('#nnlView').hidden=v!=='nnl';$('#ftView').hidden=v!=='ft';$('#vNNL').setAttribute('aria-pressed',v==='nnl');$('#vFT').setAttribute('aria-pressed',v==='ft');if(v==='ft')drawFT()})}
@@ -1288,18 +1339,19 @@ $('#vNNL').onclick=()=>setDayView('nnl');$('#vFT').onclick=()=>setDayView('ft');
 let dayAt=-1e9;
 function fadeSwap(sels,fn){VG.run('swap:'+sels.join(),fn)} // one step, queued
 function drawDay(){const d=getDay(),items=d.items.map((x,i)=>({...x,i,p:findPic(x.id)})).filter(x=>x.p),todo=items.filter(x=>d.done.indexOf(x.i)<0);
- const col=(hd,x,cls)=>'<div class="col '+cls+'"><div class="hd">'+hd+'</div>'+(x?'<button class="pcard" data-i="'+x.i+'" aria-label="'+hd+': '+esc(x.p.label)+'"><img alt="" src="'+picSrc(x.id)+'"><span>'+esc(x.p.label)+'</span>'+(x.time?'<small>'+x.time+'</small>':'')+'</button>'+(cls==='now'?'<button class="btn primary donebtn" data-done="'+x.i+'" aria-label="'+esc(x.p.label)+' is done">Done &#10003;</button>':''):'<div class="pcard" style="opacity:.6">'+(cls==='now'?'All done for today':'&nbsp;')+'</div>')+'</div>';
- $('#nnl').innerHTML=col('Now',todo[0],'now')+col('Next',todo[1],'next')+col('Later',todo[2],'later');
- const db=$('#nnl [data-done]');if(db)act(db,()=>markDone(+db.dataset.done));
- document.querySelectorAll('#nnl .pcard[data-i]').forEach(b=>act(b,()=>{const p=findPic(d.items[+b.dataset.i].id);Big.open(cardHTML(p),'',p.say)}));
+ const col=(hd,x,cls)=>'<div class="col '+cls+'"><div class="hd">'+hd+'</div>'+(x?'<button class="pcard" data-i="'+x.i+'" aria-label="'+hd+': '+esc(x.p.label)+'"><img alt="" src="'+picSrc(x.id)+'"><span>'+esc(x.p.label)+'</span>'+(x.time?'<small>'+x.time+'</small>':'')+'</button>'+(cls==='now'?'<small class="muted" style="display:block;margin-top:4px">Tap when done</small>':''):'<div class="pcard" style="opacity:.6">'+(cls==='now'?'All done for today':'&nbsp;')+'</div>')+'</div>';
+ const ud=markDone.last!=null&&Date.now()-markDone.at<30000&&d.done.indexOf(markDone.last)>=0;
+ $('#nnl').innerHTML=col('Now',todo[0],'now')+col('Next',todo[1],'next')+col('Later',todo[2],'later')+(ud?'<button class="btn" id="dayUndo" style="flex:1 1 100%">&#8630; Undo: '+esc((findPic(d.items[markDone.last].id)||{}).label||'')+' is not done</button>':'');
+ if(ud)act($('#dayUndo'),()=>{const d2=getDay(),k=d2.done.indexOf(markDone.last);markDone.last=null;if(k>=0){d2.done.splice(k,1);saveDay(d2)}VG.run('day',drawDay)});
+ document.querySelectorAll('#nnl .pcard[data-i]').forEach(b=>act(b,()=>{const i=+b.dataset.i;if(b.closest('.now'))markDone(i);else{const p=findPic(d.items[i].id);Big.open(cardHTML(p),'',p.say)}}));
  const tt=$('#tt');tt.innerHTML='';items.forEach(x=>{const li=document.createElement('li'),done=d.done.indexOf(x.i)>=0,b=document.createElement('button');b.className='trow'+(done?' isdone':'')+(todo[0]&&todo[0].i===x.i?' cur':'');
   b.setAttribute('aria-label',x.p.label+(x.time?' at '+x.time:'')+(done?', done':''));b.setAttribute('aria-pressed',done?'true':'false');
   b.innerHTML='<img alt="" src="'+picSrc(x.id)+'"><span class="nm">'+esc(x.p.label)+'</span><span class="tm">'+(x.time||'')+'</span><svg class="tk" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="none" stroke="#5d6b7a" stroke-width="3"/>'+(done?'<path d="M11 21l6 6 12-14" fill="none" stroke="#9fbaa6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>':'')+'</svg>';
   act(b,()=>toggleDone(x.i));li.appendChild(b);tt.appendChild(li)});
  $('#routName').textContent=rName(routines().cur);Timer.draw(true);if(dayView==='ft')drawFT()}
 const tapSame=(k)=>{const n=performance.now();if(tapSame[k]&&n-tapSame[k]<1000)return true;tapSame[k]=n;return false};
-function markDone(i){if(tapSame('d'+i))return;const d=getDay();if(d.done.indexOf(i)>=0)return;if(Timer.st&&Timer.st.i===i)Timer.stop(true);d.done.push(i);saveDay(d);Speak.say('Finished','info');VG.run('day',drawDay)} // one gentle fade out and back in, with the tick in the list
-function toggleDone(i){if(tapSame('d'+i))return;if(Timer.st&&Timer.st.i===i)Timer.stop(true);const d=getDay(),k=d.done.indexOf(i);if(k<0)d.done.push(i);else d.done.splice(k,1);saveDay(d);VG.run('day',drawDay)}
+function markDone(i){if(tapSame('d'+i))return;const d=getDay();if(d.done.indexOf(i)>=0)return;if(Timer.st&&Timer.st.i===i)Timer.stop(true);d.done.push(i);saveDay(d);markDone.last=i;markDone.at=Date.now();const p=findPic(d.items[i].id);Speak.say((p?p.label+', done':'Done'),'talk');VG.run('day',drawDay)} // one gentle fade out and back in, with the tick in the list
+function toggleDone(i){if(tapSame('d'+i))return;if(Timer.st&&Timer.st.i===i)Timer.stop(true);const d=getDay(),k=d.done.indexOf(i);if(k<0)d.done.push(i);else d.done.splice(k,1);saveDay(d);const p=findPic(d.items[i].id);if(p)Speak.say(p.label+(k<0?', done':', not done yet'),'talk');VG.run('day',drawDay)}
 const TIMES=['',...Array.from({length:48},(_,k)=>{const m=k*30;return String(m/60|0).padStart(2,'0')+':'+(m%60?'30':'00')})];
 function drawDayEdit(){const d=getDay(),ul=$('#ttEdit');ul.innerHTML='';d.items.forEach((x,i)=>{const p=findPic(x.id);if(!p)return;const li=document.createElement('li');li.className='erow';
  li.innerHTML='<img alt="" src="'+picSrc(x.id)+'"><span class="nm">'+esc(p.label)+'</span>';
@@ -1339,9 +1391,9 @@ const Mixer={on:false,bus:null,g:{},nodes:[],lv:Object.assign({rain:.5,brown:0,w
   this.nodes=Sound.nodes;Sound.nodes=keep},
  level(k,v){this.lv[k]=clamp(+v||0,0,1);store.set('mix',this.lv);if(this.on&&this.g[k]){const n=Sound.ctx.currentTime;this.g[k].gain.cancelScheduledValues(n);this.g[k].gain.setTargetAtTime(this.lv[k]*.7,n,.8)}},
  vol(v){this.lv.vol=clamp(+v||0,0,1);store.set('mix',this.lv);if(this.on)Sound.setVol(this.lv.vol)},
- start(){if(this.on||prefs.hush)return;Sound.stopNow();if(!Sound.ensure())return;this.build();this.on=true;const n=Sound.ctx.currentTime;Sound.setVol(this.lv.vol);
+ start(){if(this.on||prefs.hush)return;Sound.stopNow();if(!Sound.ensure())return;this.build();this.on=true;document.body.classList.add('mixon');const n=Sound.ctx.currentTime;Sound.setVol(this.lv.vol);
   for(const [k] of MIXCH)this.g[k].gain.setValueAtTime(this.lv[k]*.7,n);this.bus.gain.setValueAtTime(0,n);this.bus.gain.linearRampToValueAtTime(1,n+3.5);syncMix()},
- stop(){if(!this.on)return;this.on=false;const b=this.bus,ns=this.nodes,n=Sound.ctx.currentTime;b.gain.cancelScheduledValues(n);b.gain.setValueAtTime(b.gain.value,n);b.gain.linearRampToValueAtTime(0,n+1.5);
+ stop(){if(!this.on)return;this.on=false;document.body.classList.remove('mixon');const b=this.bus,ns=this.nodes,n=Sound.ctx.currentTime;b.gain.cancelScheduledValues(n);b.gain.setValueAtTime(b.gain.value,n);b.gain.linearRampToValueAtTime(0,n+1.5);
   setTimeout(()=>{ns.forEach(x=>{try{x.stop()}catch(e){}try{x.disconnect()}catch(e){}});try{b.disconnect()}catch(e){}},1700);this.bus=null;this.nodes=[];this.g={};syncMix()}};
 (function(){const w=$('#mixCh');MIXCH.forEach(([k,l])=>{const d=document.createElement('div');d.className='ch';d.innerHTML='<div class="lab"><label for="mx_'+k+'">'+l+'</label><span class="muted" id="v_mx_'+k+'"></span></div><input type="range" id="mx_'+k+'" min="0" max="1" step="0.05">';w.appendChild(d);
  d.querySelector('input').oninput=e=>{Mixer.level(k,e.target.value);$('#v_mx_'+k).textContent=pct(Mixer.lv[k])}});

@@ -1,5 +1,5 @@
 /* Calm Space service worker: caches the app so it works offline. No tracking, no network calls beyond loading the app itself. */
-const CACHE = 'calm-space-v4-2026-10-19'; // bump on every build
+const CACHE = 'calm-space-v6-2026-10-21'; // bump on every build
 const ASSETS = ['./', './index.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
