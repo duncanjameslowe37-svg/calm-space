@@ -726,13 +726,59 @@ const gentleFactor=()=>(prefs.gentler?0.5:1)*(RM.matches?0.5:1);
 let AMP=1;const updAmp=()=>{AMP=(prefs.gentler?0.6:1)*(RM.matches?0.7:1)};updAmp();
 
 /* ---------- Sound (Web Audio, generated on the device) ---------- */
-const Sound={ctx:null,master:null,bus:null,nodes:[],type:null,vol:.6,MAX:.3,CEIL:.25,nb:{},fading:[],pops:0,lastPop:-1e9,wanted:null,rt:0,an:null,
- ensure(){if(!this.ctx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;
-   const c=this.ctx=new AC();const lim=c.createDynamicsCompressor();lim.threshold.value=-20;lim.knee.value=10;lim.ratio.value=12;lim.attack.value=.005;lim.release.value=.4;
-   this.master=c.createGain();this.master.gain.value=0;this.master.connect(lim);const trim=c.createGain();trim.gain.value=.5;const cl=c.createWaveShaper(),N=2048,cv=new Float32Array(N);for(let i=0;i<N;i++){const x=(i/(N-1))*2-1;cv[i]=this.CEIL*Math.tanh(x*4/this.CEIL)/Math.tanh(4/this.CEIL)}cl.curve=cv;
-   this.an=c.createAnalyser();this.an.fftSize=2048;lim.connect(trim);trim.connect(cl);cl.connect(this.an);this.an.connect(c.destination);this.master.gain.setValueAtTime(0,c.currentTime);this.master.gain.linearRampToValueAtTime(this.vol*this.MAX,c.currentTime+1)} // hard ceiling: output can never exceed CEIL. (Bug fix: the master used to stay at 0 when the first volume was set before the context existed.)
-  if(this.ctx.state==='suspended')this.ctx.resume();return true},
- setVol(v){v=clamp(+v||0,0,1);this.vol=v;if(!this.ctx)return;const g=this.master.gain,n=this.ctx.currentTime;g.cancelScheduledValues(n);g.setValueAtTime(g.value,n);g.linearRampToValueAtTime(clamp(v,0,1)*this.MAX,n+1)},
+const Sound={ctx:null,master:null,bus:null,nodes:[],type:null,vol:.6,MAX:.26,CEIL:.22,off:false,tapBus:null,taps:[],tapLog:[],bank:null,mus:null,nb:{},fading:[],pops:0,lastPop:-1e9,wanted:null,rt:0,an:null,
+ ensure(){if(this.off)return true;if(!this.ctx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;
+   let c;try{c=new AC({latencyHint:'interactive'})}catch(e){c=new AC()}this.ctx=c;this.build(c);
+   try{if(c.createConstantSource){const k=c.createConstantSource(),z=c.createGain();z.gain.value=0;k.connect(z);z.connect(c.destination);k.start()}}catch(e){} /* silent keep-alive: the audio stays warm so taps sound at once */
+   this.master.gain.setValueAtTime(0,c.currentTime);this.master.gain.linearRampToValueAtTime(this.vol*this.MAX,c.currentTime+1)}
+  if(this.ctx.state!=='running'&&this.ctx.state!=='closed'){try{const p=this.ctx.resume();if(p&&p.catch)p.catch(()=>{})}catch(e){}}return true},
+ /* Output chain: everything is warmed by two low-pass filters (nothing piercing above about 2 kHz), a light room reverb, a gentle limiter,
+    then a hard ceiling that stays clean (no distortion) below 70% of the cap. Tap sounds use their own bus with no fade-in. */
+ build(c){const lim=c.createDynamicsCompressor();lim.threshold.value=-22;lim.knee.value=10;lim.ratio.value=12;lim.attack.value=.005;lim.release.value=.4;
+   this.master=c.createGain();this.master.gain.value=0;this.tapBus=c.createGain();this.tapBus.gain.value=this.vol*this.MAX;
+   const lp1=c.createBiquadFilter(),lp2=c.createBiquadFilter();lp1.type='lowpass';lp2.type='lowpass';lp1.frequency.value=2400;lp2.frequency.value=2400;lp1.Q.value=.6;lp2.Q.value=.6;
+   this.master.connect(lp1);this.tapBus.connect(lp1);lp1.connect(lp2);
+   const dry=c.createGain(),wet=c.createGain(),cv=c.createConvolver();dry.gain.value=.85;wet.gain.value=.3;cv.buffer=this.room(c);lp2.connect(dry);lp2.connect(cv);cv.connect(wet);dry.connect(lim);wet.connect(lim);
+   const trim=c.createGain();trim.gain.value=1.15;const cl=c.createWaveShaper(),N=4096,cu=new Float32Array(N),C=this.CEIL,a=C*.7;
+   for(let i=0;i<N;i++){const x=(i/(N-1))*2-1,m=Math.abs(x);cu[i]=Math.sign(x)*(m<a?m:a+(C-a)*Math.tanh((m-a)/(C-a)))}cl.curve=cu;
+   this.an=c.createAnalyser();this.an.fftSize=2048;lim.connect(trim);trim.connect(cl);cl.connect(this.an);this.an.connect(c.destination);this.nb={};this.bank=this.mkBank(c);this.taps=[]},
+ room(c){const sr=c.sampleRate,len=Math.round(sr*2.4),b=c.createBuffer(2,len,sr);for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);let v=0;for(let i=0;i<len;i++){const t=i/sr;v+=((Math.random()*2-1)-v)*.22;d[i]=v*Math.exp(-t*2.6)*Math.min(1,t/.012)}}return b},
+ /* Pre-built tap sounds (made once, played instantly): soft, muted, bubbly or woody. All have a 10 ms soft attack and no high partials. */
+ mkBank(c){const sr=c.sampleRate,B={},S1=Math.sin,E=Math.exp;
+  const mk=(name,dur,fn)=>{const n=Math.round(sr*dur),b=c.createBuffer(1,n,sr),d=b.getChannelData(0),ph=[0,0,0,0];let pk=1e-9;
+   const o=(k,f)=>{ph[k]+=TAU*f/sr;return S1(ph[k])};for(let i=0;i<n;i++){d[i]=fn(i/sr,o);pk=Math.max(pk,Math.abs(d[i]))}
+   const at=Math.round(sr*.01),rl=Math.round(sr*.02);for(let i=0;i<n;i++){let e=1;if(i<at)e=S1(i/at*Math.PI/2)**2;if(i>n-rl)e*=(n-i)/rl;d[i]=d[i]/pk*.9*e}B[name]=b};
+  mk('bloop',.35,(t,o)=>{const f=230+190*E(-t/.03);return(o(0,f)+.12*o(1,2*f))*E(-t/.07)});          // a bubble pressed in
+  mk('bloopUp',.3,(t,o)=>{const f=300+120*(1-E(-t/.04));return(o(0,f)+.1*o(1,2*f))*E(-t/.06)});       // popping back out
+  mk('wood',.3,(t,o)=>o(0,430)*E(-t/.05)+.3*o(1,1032)*E(-t/.015)+.35*o(2,210)*E(-t/.07));             // a soft wooden click
+  mk('tick',.12,(t,o)=>o(0,620)*E(-t/.018)+.4*o(1,280)*E(-t/.03));                                    // spinner tick
+  mk('squelch',.45,(t,o)=>{const f=180+90*E(-t/.05);return o(0,f)*(1+.3*S1(TAU*24*t))*E(-t/.12)});
+  mk('boing',.8,(t,o)=>o(0,150+40*(1-E(-t/.08))+6*S1(TAU*7*t))*E(-t/.25));
+  mk('stretch',.4,(t,o)=>o(0,240)*E(-t/.12)+.2*o(1,480)*E(-t/.08));
+  mk('note',3.2,(t,o)=>(o(0,261.63)+.12*o(1,523.25)+.03*o(2,784.9))*E(-t/.8));                     // soft bell-less note, long release
+  mk('drop',1.2,(t,o)=>{const f=300+260*E(-t/.02);return(o(0,f)+.1*o(1,2*f))*E(-t/.35)});
+  return B},
+ /* Play a tap sound now: no fade-in, a voice limit of 4 (the oldest fades out in 30 ms), slight pitch variation, level shared out between voices */
+ play(name,rate,gain,when){if(!this.off&&(prefs.hush||!S||!S.sound))return false;if(!this.ensure()||!this.bank||!this.bank[name])return false;const c=this.ctx,n=c.currentTime,t0=when!=null?when:n;
+  this.taps=this.taps.filter(v=>v.end>t0);while(this.taps.length>=4){const v=this.taps.shift();try{v.g.gain.setValueAtTime(v.g.gain.value,t0);v.g.gain.linearRampToValueAtTime(0,t0+.03);v.s.stop(t0+.04)}catch(e){}}
+  const s=c.createBufferSource(),g=c.createGain();s.buffer=this.bank[name];s.playbackRate.value=(rate||1)*(1+(Math.random()-.5)*.05);g.gain.value=(gain==null?.5:gain)/(1+.15*this.taps.length);
+  s.connect(g);g.connect(this.tapBus);s.start(t0);this.taps.push({s,g,end:t0+s.buffer.duration/s.playbackRate.value});s.onended=()=>{try{s.disconnect();g.disconnect()}catch(e){}};
+  if(!this.off){this.tapLog.push(performance.now());if(this.tapLog.length>300)this.tapLog.shift()}return true},
+ pop(){return this.play('bloop',1,.45)},
+ /* Slow pentatonic music: one soft note every 2 to 8 seconds (always under 60 bpm), random-walk melody, so nothing can clash */
+ music(bus,sc,gaps,g){this.mus={sc,gaps,g,bus,deg:Math.floor(sc.length/2),next:this.ctx.currentTime+2};if(!this.off)this.mus.tm=setInterval(()=>this.sched(),500)},
+ sched(ahead){const m=this.mus;if(!m||!this.ctx)return;const end=this.ctx.currentTime+(ahead||1.5);
+  while(m.next<end){const sc=m.sc;m.deg=clamp(m.deg+[-2,-1,-1,0,1,1,2][Math.floor(Math.random()*7)],0,sc.length-1);this.note(sc[m.deg],m.next,m.g,m.bus);
+   if(Math.random()<.25&&m.deg>1)this.note(sc[m.deg-2],m.next+.02,m.g*.6,m.bus);m.next+=m.gaps[Math.floor(Math.random()*m.gaps.length)]}},
+ note(f,t,gain,bus){const s=this.ctx.createBufferSource(),g=this.ctx.createGain();s.buffer=this.bank.note;s.playbackRate.value=f/261.63;g.gain.value=gain;s.connect(g);g.connect(bus);s.start(t);s.onended=()=>{try{s.disconnect();g.disconnect()}catch(e){}}},
+ pad(fs,gn,lp,chain){fs.forEach((f,i)=>{const g=this.gain(gn);this.lfo(g.gain,.025+i*.011,gn*.6);chain(this.osc(f,'triangle'),this.filt('lowpass',lp),g)})},
+ /* Render the real sound chain offline (for the sound check): returns the rendered AudioBuffer */
+ async offline(secs,fn){const keep={};const F=['ctx','master','tapBus','an','bus','nodes','type','fading','nb','bank','taps','mus','pops'];F.forEach(k=>keep[k]=this[k]);
+  const mk={};['bus','g','nodes'].forEach(k=>mk[k]=Mixer[k]);
+  const oc=new OfflineAudioContext(2,Math.round(44100*secs),44100);this.off=true;this.ctx=oc;this.bus=null;this.nodes=[];this.fading=[];this.type=null;this.mus=null;this.pops=0;
+  let buf;try{this.build(oc);this.master.gain.value=this.vol*this.MAX;fn(this,oc);if(this.mus)this.sched(secs);buf=await oc.startRendering()}
+  finally{this.off=false;F.forEach(k=>this[k]=keep[k]);Object.assign(Mixer,mk)}return buf},
+ setVol(v){v=clamp(+v||0,0,1);this.vol=v;if(!this.ctx)return;const g=this.master.gain,n=this.ctx.currentTime;g.cancelScheduledValues(n);g.setValueAtTime(g.value,n);g.linearRampToValueAtTime(clamp(v,0,1)*this.MAX,n+1);const tb=this.tapBus.gain;tb.cancelScheduledValues(n);tb.setValueAtTime(tb.value,n);tb.linearRampToValueAtTime(v*this.MAX,n+.1)},
  noise(kind){if(this.nb[kind])return this.nb[kind];const c=this.ctx,sr=c.sampleRate,len=sr*8,F=sr|0,tmp=new Float32Array(len+F);
   let last=0,b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
   for(let i=0;i<len+F;i++){const w=Math.random()*2-1;
@@ -749,32 +795,26 @@ const Sound={ctx:null,master:null,bus:null,nodes:[],type:null,vol:.6,MAX:.3,CEIL
  lfo(param,rate,depth){const o=this.osc(rate),g=this.gain(depth);o.connect(g);g.connect(param)},
  want(type){this.wanted=type||null;clearTimeout(this.rt);this.rt=setTimeout(()=>{if(this.wanted)this.start(this.wanted);else this.stop()},450)},
  level(){if(!this.an)return 0;const a=new Float32Array(this.an.fftSize);this.an.getFloatTimeDomainData(a);let m=0;for(const v of a)m=Math.max(m,Math.abs(v));return m},
- voices(){return(this.bus?1:0)+this.fading.length+this.pops+(window.Mixer&&Mixer.on?1:0)},
+ voices(){return(this.bus?1:0)+this.fading.length+this.pops+(this.ctx?this.taps.filter(v=>v.end>this.ctx.currentTime).length:0)+(window.Mixer&&Mixer.on?1:0)},
  start(type){if(prefs.hush)return;if(!this.ensure())return;if(this.type===type&&this.bus)return;this.stop();
   const c=this.ctx,n=c.currentTime,bus=this.bus=this.gain(0);bus.connect(this.master);this.type=type;this.nodes=[];
   bus.gain.setValueAtTime(0,n);bus.gain.linearRampToValueAtTime(1,n+3.5); // slow fade-in
   const chain=(...a)=>{for(let i=0;i<a.length-1;i++)a[i].connect(a[i+1]);a[a.length-1].connect(bus)};
-  if(type==='tones'){[174.61,220,261.63,329.63].forEach((f,i)=>{const g=this.gain(.05);this.lfo(g.gain,.03+i*.013,.03);chain(this.osc(f),g,this.filt('lowpass',900));
-    const g2=this.gain(.025);chain(this.osc(f*1.003),g2)})}
-  else if(type==='water'){const g=this.gain(.8);this.lfo(g.gain,.05,.2);chain(this.src('brown'),this.filt('lowpass',550),g);
-    chain(this.src('pink'),this.filt('bandpass',1100,.7),this.gain(.05))}
-  else if(type==='rain'){chain(this.src('pink'),this.filt('highpass',500),this.filt('lowpass',4500),this.gain(.45));chain(this.src('brown'),this.filt('lowpass',260),this.gain(.45))}
-  else if(type==='night'){const g=this.gain(.035);this.lfo(g.gain,.02,.015);chain(this.osc(110),g);const g2=this.gain(.02);this.lfo(g2.gain,.027,.012);chain(this.osc(164.81),g2);
-    const w=this.gain(.16);this.lfo(w.gain,.04,.07);chain(this.src('pink'),this.filt('lowpass',480),w)}
-  else{chain(this.src('brown'),this.filt('lowpass',340),this.gain(1));chain(this.osc(55),this.gain(.025))}},
+  if(type==='tones'){this.pad([130.81,196,261.63],.022,700,chain);this.music(bus,[196,220,261.63,293.66,329.63,392,440,523.25],[2,3,3,4],.09)} /* soft C pad, slow pentatonic notes */
+  else if(type==='water'){const g=this.gain(.8);this.lfo(g.gain,.05,.2);chain(this.src('brown'),this.filt('lowpass',500),g);chain(this.src('pink'),this.filt('highpass',200),this.filt('lowpass',700),this.gain(.07))}
+  else if(type==='rain'){chain(this.src('pink'),this.filt('highpass',250),this.filt('lowpass',1300),this.filt('lowpass',1800),this.gain(.42));chain(this.src('brown'),this.filt('lowpass',260),this.gain(.45))}
+  else if(type==='night'){this.pad([110,164.81,220],.02,520,chain);const w=this.gain(.14);this.lfo(w.gain,.04,.06);chain(this.src('pink'),this.filt('lowpass',450),w);this.music(bus,[220,261.63,293.66,329.63,392],[5,6,8],.05)}
+  else{chain(this.src('brown'),this.filt('lowpass',340),this.gain(1))}},
  kill(f){clearTimeout(f.t);f.ns.forEach(x=>{try{x.stop()}catch(e){}try{x.disconnect()}catch(e){}});try{f.b.disconnect()}catch(e){}const i=this.fading.indexOf(f);if(i>=0)this.fading.splice(i,1)},
- stop(){if(!this.bus)return;const b=this.bus,ns=this.nodes,n=this.ctx.currentTime;b.gain.cancelScheduledValues(n);b.gain.setValueAtTime(b.gain.value,n);b.gain.linearRampToValueAtTime(0,n+1.5);
+ stop(){if(this.mus){clearInterval(this.mus.tm);this.mus=null}if(!this.bus)return;const b=this.bus,ns=this.nodes,n=this.ctx.currentTime;b.gain.cancelScheduledValues(n);b.gain.setValueAtTime(b.gain.value,n);b.gain.linearRampToValueAtTime(0,n+1.5);
   while(this.fading.length>=1){const o=this.fading[0];o.b.gain.cancelScheduledValues(n);o.b.gain.setValueAtTime(o.b.gain.value,n);o.b.gain.linearRampToValueAtTime(0,n+.2);this.fading.shift();setTimeout(()=>this.kill(o),300)}
   const f={b,ns};f.t=setTimeout(()=>this.kill(f),1800);this.fading.push(f);this.bus=null;this.type=null;this.nodes=[]},
  stopNow(){clearTimeout(this.rt);this.wanted=null;this.stop()},
- pop(f0,f1){f0=f0||520;f1=f1||240;if(prefs.hush||!S||!S.sound||!this.ctx)return;const now=performance.now();if(this.pops>=3||now-this.lastPop<160)return;this.lastPop=now;this.ensure();const c=this.ctx,n=c.currentTime,o=c.createOscillator(),g=c.createGain();this.pops++;o.onended=()=>{this.pops--;try{o.disconnect();g.disconnect()}catch(e){}};
-  o.frequency.setValueAtTime(f0,n);o.frequency.exponentialRampToValueAtTime(f1,n+.35);g.gain.setValueAtTime(0,n);g.gain.linearRampToValueAtTime(.22,n+.05);g.gain.exponentialRampToValueAtTime(.0005,n+.7);
-  o.connect(g);g.connect(this.master);o.start(n);o.stop(n+.75)}
 };
 
 /* ---------- Effects ---------- */
 const FX={
- wash:{name:'Colour wash',desc:'Soft colours drifting slowly',sound:'tones',soundName:'Soft tones',pal:'blues',scale:.5,
+ wash:{name:'Colour wash',desc:'Soft colours drifting slowly',sound:'tones',soundName:'Soft music',pal:'blues',scale:.5,
   make(){return{g:[],last:0,init(){},
    frame(ctx,w,h,dt,t,P,rdt){const T=t/18,m=Math.max(w,h),A=AMP||1;
     /* A slow hue journey (one full circle about every 26 s), blended with the chosen palette. Muted: saturation <= 55%, reds kept at 22%, lightness fixed and dim. */
@@ -800,7 +840,7 @@ const FX={
      const x=o.x+Math.sin(t*.35+o.ph)*o.sw*AMP,c=P.c[o.ci],lc=mix(c,[225,235,240],.45);o.cx=x;
      const rg=ctx.createRadialGradient(x-r*.3,o.y-r*.35,r*.1,x,o.y,r);rg.addColorStop(0,rgb(lc,.75*a));rg.addColorStop(.75,rgb(c,.5*a));rg.addColorStop(1,rgb(lc,.8*a));
      ctx.fillStyle=rg;ctx.beginPath();ctx.arc(x,o.y,r,0,TAU);ctx.fill()}},
-   touch(x,y,k){if(k!=='down')return;for(let i=this.b.length-1;i>=0;i--){const o=this.b[i];if(o.pop<0&&o.a>.3&&Math.hypot(x-o.cx,y-o.y)<o.r*1.15){o.pop=0;Sound.pop();return}}
+   touch(x,y,k){if(k!=='down')return;for(let i=this.b.length-1;i>=0;i--){const o=this.b[i];if(o.pop<0&&o.a>.3&&Math.hypot(x-o.cx,y-o.y)<o.r*1.15){o.pop=0;return}}
     if(this.b.length<36){const o=this.mk(this.w,this.h,false);o.x=x;o.y=y;o.r*=.7;this.b.push(o)}}}}},
  ripples:{name:'Fluid ripples',desc:'Touch to leave slow ripples',sound:'rain',soundName:'Soft rain',pal:'blues',scale:1.25,
   make(){return{r:[],next:1.5,last:0,
@@ -812,7 +852,7 @@ const FX={
     for(const o of this.r){const a=.65*sm(o.age/.8)*Math.pow(1-o.age/8,1.5),R=o.age*36*s;ctx.strokeStyle=rgb(lc,a);
      for(const f of[1,.68,.42]){const rr=R*f-6*s;if(rr>1){ctx.beginPath();ctx.arc(o.x,o.y,rr,0,TAU);ctx.stroke()}}}},
    touch(x,y,k,now){if(k==='down'||(k==='move'&&now-this.last>280)){this.last=now;this.add(x,y)}}}}},
- stars:{name:'Night sky',desc:'Slow stars over glowing colour clouds',sound:'night',soundName:'Night hum',pal:'blues',scale:1.5,
+ stars:{name:'Night sky',desc:'Slow stars over glowing colour clouds',sound:'night',soundName:'Night pad',pal:'blues',scale:1.5,
   make(){return{s:[],extra:0,w:0,h:0,
    mk(w,h){return{x:Math.random()*w,y:Math.random()*h,z:.3+Math.random()*.7,sz:1+Math.random()*2,b:.55+Math.random()*.45,tw:6+Math.random()*10,ph:Math.random()*TAU,a:1}},
    init(w,h){const n=Math.round(clamp(w*h/2600,80,520));if(this.w&&this.s.length){const sx=w/this.w,sy=h/this.h;this.s.forEach(o=>{o.x*=sx;o.y*=sy})}else{this.s=[];for(let i=0;i<n;i++)this.s.push(this.mk(w,h))}this.w=w;this.h=h},
@@ -843,51 +883,92 @@ const FX={
      d[p++]=br[0]+(r0-br[0])*v;d[p++]=br[1]+(g0-br[1])*v;d[p++]=br[2]+(b0-br[2])*v;d[p++]=255}}
     this.octx.putImageData(this.img,0,0);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(this.off,0,0,w,h)},
    touch(x,y,k,now){const n=performance.now();if(this.tp&&n-this.tp.set<1500){this.tp.at=n;return}this.tp={x:x/this.cw*this.gw,y:y/this.ch*this.gh,at:n,set:n}}}}},
- /* ---- Fidgets: same safety rules (dim, slow easing, rate-limited input, capped speeds) ---- */
+ /* ---- Fidgets: react instantly to every finger (each change is small and local); speeds stay capped and the screen stays dim ---- */
  pop:{name:'Pop grid',desc:'Press soft bubbles in and out',sound:'brown',soundName:'Brown noise',pal:'lilac',scale:1.5,fidget:true,
   make(){return{c:[],init(w,h){const L=w>=h,cols=L?8:5,rows=L?5:7,sz=Math.min(w*.88/cols,h*.78/rows),ox=(w-sz*cols)/2,oy=(h-sz*rows)/2;const old=this.c;this.c=[];this.bw=sz*cols;this.bh=sz*rows;this.ox=ox;this.oy=oy;this.sz=sz;
-    for(let r=0;r<rows;r++)for(let q=0;q<cols;q++){const i=r*cols+q,o=old[i];this.c.push({x:ox+sz*(q+.5),y:oy+sz*(r+.5),r:sz*.36,v:o?o.v:0,t:o?o.t:0,ci:(q+r)%5})}},
+    for(let r=0;r<rows;r++)for(let q=0;q<cols;q++){const i=r*cols+q,o=old[i];this.c.push({x:ox+sz*(q+.5),y:oy+sz*(r+.5),r:sz*.36,v:o?o.v:0,t:o?o.t:0,sq:0,ci:(q+r)%5})}this.last=new Map()},
    frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,P.c[0],.4));ctx.fillRect(0,0,w,h);const pad=this.sz*.3;ctx.fillStyle=rgb(mix(P.bg,P.c[1],.6));
     ctx.beginPath();if(ctx.roundRect)ctx.roundRect(this.ox-pad,this.oy-pad,this.bw+pad*2,this.bh+pad*2,this.sz*.4);else ctx.rect(this.ox-pad,this.oy-pad,this.bw+pad*2,this.bh+pad*2);ctx.fill();
-    const k=1-Math.exp(-rdt/.3);for(const o of this.c){o.v+=(o.t-o.v)*k;const up=P.c[o.ci],lc=mix(up,[235,236,240],.35),dc=mix(mix(up,[70,72,80],.55),[0,0,0],.45); /* unpopped: full bright colour with a highlight; popped: dark, grey and pressed in */
+    const k=1-Math.exp(-rdt/.05),ks=Math.exp(-rdt/.12);for(const o of this.c){o.v+=(o.t-o.v)*k;o.sq*=ks;const up=P.c[o.ci],lc=mix(up,[235,236,240],.35),dc=mix(mix(up,[70,72,80],.55),[0,0,0],.45); /* unpopped: full bright colour with a highlight; popped: dark, grey and pressed in */
      const g=ctx.createRadialGradient(o.x-o.r*.35*(1-2*o.v),o.y-o.r*.35*(1-2*o.v),o.r*.1,o.x,o.y,o.r);g.addColorStop(0,rgb(mix(lc,dc,o.v)));g.addColorStop(1,rgb(mix(up,mix(dc,[0,0,0],.3),o.v)));
-     ctx.fillStyle=g;ctx.beginPath();ctx.arc(o.x,o.y,o.r*(1-.06*o.v),0,TAU);ctx.fill()}},
-   touch(x,y,k){if(k!=='down')return;for(const o of this.c)if(Math.hypot(x-o.x,y-o.y)<o.r*1.25){o.t=1-o.t;Sound.pop(o.t?300:360,o.t?220:270);return}}}}},
- spinner:{name:'Spinner',desc:'Drag to spin. It slows down by itself',sound:'brown',soundName:'Brown noise',pal:'blues',scale:1.5,fidget:true,moveGap:30,
-  make(){return{a:0,w:0,dr:null,init(){},
-   frame(ctx,w,h,dt,t,P,rdt){const MAXW=.14*TAU; // at most 0.14 turns a second, so the lobes pass any spot well under twice a second
-    this.w=clamp(this.w,-MAXW,MAXW);this.w*=Math.exp(-rdt*.3);this.a+=this.w*rdt;ctx.fillStyle=rgb(mix(P.bg,P.c[0],.45));ctx.fillRect(0,0,w,h);
+     ctx.fillStyle=g;ctx.beginPath();ctx.arc(o.x,o.y,o.r*(1-.06*o.v-.12*o.sq),0,TAU);ctx.fill()}},
+   /* every finger presses the bubble under it at once; sliding a finger onto another bubble presses that one too */
+   touch(x,y,k,now,id){if(k==='up'){this.last.delete(id);return}let hit=null;for(const o of this.c)if(Math.hypot(x-o.x,y-o.y)<o.r*1.15){hit=o;break}
+    if(k==='move'&&(!hit||this.last.get(id)===hit))return;if(!hit){this.last.set(id,null);return}this.last.set(id,hit);hit.t=1-hit.t;hit.sq=1;hit.v+=(hit.t-hit.v)*.35;
+    Sound.play(hit.t?'bloop':'bloopUp',.9+.05*hit.ci,.5)}}}},
+ spinner:{name:'Spinner',desc:'Drag to spin. It slows down by itself',sound:'brown',soundName:'Brown noise',pal:'blues',scale:1.5,fidget:true,
+  /* The spinner follows the finger directly (up to 1.2 turns a second), then carries on with momentum (at most half a turn a second) and slows by itself.
+     When it moves fast it blurs into a smooth disc, as a real spinner looks, so the lobes never strobe: above 1.2 rad/s the
+     sharp shape fades into its time-averaged image and is fully smooth by 2 rad/s (lobes then pass any point < once a second). */
+  make(){return{a:0,w:0,dr:null,vel:0,tk:0,lt:0,ld:0,sps:0,pend:0,init(){},
+   frame(ctx,w,h,dt,t,P,rdt){const MAXW=.5*TAU,a0=this.a;
+    if(this.dr&&performance.now()-this.dr.t>120)this.vel*=Math.exp(-rdt/.08);
+    if(this.pend){const mx=1.2*TAU*rdt,st=clamp(this.pend,-mx,mx);this.a+=st;this.pend-=st}
+    if(!this.dr){this.w=clamp(this.w,-MAXW,MAXW);this.w*=Math.exp(-rdt*.45);this.a+=this.w*rdt}
+    const sp=Math.abs((this.a-this.ld)/Math.max(rdt,.001));this.ld=this.a;this.sps=sp>this.sps?sp:this.sps+(sp-this.sps)*(1-Math.exp(-rdt/.3));
+    const tk=Math.floor(this.a/(TAU/3));if(tk!==this.tk){this.tk=tk;const n=performance.now();if(n-this.lt>70){this.lt=n;Sound.play('tick',1,.12+.2*Math.min(1,sp/MAXW))}}
+    ctx.fillStyle=rgb(mix(P.bg,P.c[0],.45));ctx.fillRect(0,0,w,h);
     const cx=w/2,cy=h/2,R=Math.min(w,h)*.3,body=mix(P.bg,P.c[1],.9),lobe=mix(mix(P.bg,P.c[1],.9),P.c[2],.5),cap=mix(body,[220,226,235],.35);
-    ctx.save();ctx.translate(cx,cy);ctx.rotate(this.a);ctx.fillStyle=rgb(body);
-    for(let i=0;i<3;i++){const an=i*TAU/3,x=Math.cos(an)*R*.62,y=Math.sin(an)*R*.62;ctx.beginPath();ctx.arc(x,y,R*.38,0,TAU);ctx.fill()}
-    ctx.beginPath();ctx.arc(0,0,R*.42,0,TAU);ctx.fill();ctx.fillStyle=rgb(lobe);
-    for(let i=0;i<3;i++){const an=i*TAU/3;ctx.beginPath();ctx.arc(Math.cos(an)*R*.62,Math.sin(an)*R*.62,R*.22,0,TAU);ctx.fill()}
-    ctx.fillStyle=rgb(cap);ctx.beginPath();ctx.arc(0,0,R*.18,0,TAU);ctx.fill();ctx.restore()},
-   touch(x,y,k,now){const an=Math.atan2(y-this.ch/2,x-this.cw/2);if(k==='down'){this.dr={an,t:now};return}if(!this.dr||now-this.dr.t>300){this.dr={an,t:now};return}
-    let d=an-this.dr.an;if(d>Math.PI)d-=TAU;if(d<-Math.PI)d+=TAU;const s=Math.max(.016,(now-this.dr.t)/1000);this.w=this.w*.6+(d/s)*.4;this.dr={an,t:now}}}}},
+    const kb=sm(clamp((this.sps-1.2)/.8,0,1));
+    if(kb>0){/* time-averaged spinner: colour at each radius = mix of what passes over it, weighted by angular coverage */
+     const cov=(r,d,rho)=>r<1e-6?(d<rho?1:0):r<=rho-d?1:(r>=d+rho||r<=d-rho)?0:3*Math.acos(clamp((r*r+d*d-rho*rho)/(2*r*d),-1,1))/Math.PI;
+     const g=ctx.createRadialGradient(cx,cy,0,cx,cy,R*1.02),bgc=mix(P.bg,P.c[0],.45);
+     for(let i=0;i<=16;i++){const r=i/16*1.02,cb=Math.max(cov(r,.62,.38),r<=.42?1:0),cl=cov(r,.62,.22),cc=r<=.18?1:0;
+      let col=mix(bgc,body,Math.min(1,cb));col=mix(col,lobe,Math.min(1,cl));col=mix(col,cap,cc);g.addColorStop(i/16,rgb(col))}
+     ctx.globalAlpha=kb;ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R*1.02,0,TAU);ctx.fill();ctx.globalAlpha=1}
+    const N=kb>=1?0:sp>1.2?4:1,spread=Math.min(TAU/3,sp*.05);ctx.globalAlpha=(1-kb)/Math.max(1,N);
+    for(let s=0;s<N;s++){const an0=this.a-(N>1?spread*s/(N-1):0);ctx.save();ctx.translate(cx,cy);ctx.rotate(an0);ctx.fillStyle=rgb(body);
+     for(let i=0;i<3;i++){const an=i*TAU/3,x=Math.cos(an)*R*.62,y=Math.sin(an)*R*.62;ctx.beginPath();ctx.arc(x,y,R*.38,0,TAU);ctx.fill()}
+     ctx.beginPath();ctx.arc(0,0,R*.42,0,TAU);ctx.fill();ctx.fillStyle=rgb(lobe);
+     for(let i=0;i<3;i++){const an=i*TAU/3;ctx.beginPath();ctx.arc(Math.cos(an)*R*.62,Math.sin(an)*R*.62,R*.22,0,TAU);ctx.fill()}
+     ctx.fillStyle=rgb(cap);ctx.beginPath();ctx.arc(0,0,R*.18,0,TAU);ctx.fill();ctx.restore()}ctx.globalAlpha=1},
+   touch(x,y,k,now,id){const an=Math.atan2(y-this.ch/2,x-this.cw/2);
+    if(k==='down'){if(this.dr)return;this.dr={id,an,t:now};this.w*=.3;this.vel=0;Sound.play('tick',.8,.3);return}
+    if(!this.dr||this.dr.id!==id)return;
+    if(k==='up'){this.w=clamp(this.vel,-.5*TAU,.5*TAU);this.dr=null;return}
+    let d=an-this.dr.an;if(d>Math.PI)d-=TAU;if(d<-Math.PI)d+=TAU;const s=Math.max(.008,(now-this.dr.t)/1000),cap=1.2*TAU*s;d=clamp(d,-cap,cap);
+    this.pend=clamp(this.pend+d,-TAU/3,TAU/3);this.vel=this.vel*.5+(d/s)*.5;this.dr={id,an,t:now}}}}},
  switches:{name:'Switches',desc:'Soft switches to flick on and off',sound:'brown',soundName:'Brown noise',pal:'greens',scale:1.5,fidget:true,
   make(){return{c:[],init(w,h){const L=w>=h,cols=L?4:2,rows=L?3:6,cw=w*.8/cols,chh=h*.76/rows,ox=(w-cw*cols)/2,oy=(h-chh*rows)/2,old=this.c;this.c=[];
-    for(let r=0;r<rows;r++)for(let q=0;q<cols;q++){const i=r*cols+q,o=old[i];const sw=Math.min(cw*.7,chh*1.4),sh=Math.min(sw*.46,chh*.6);this.c.push({x:ox+cw*(q+.5),y:oy+chh*(r+.5),w:sw,h:sh,on:o?o.on:false,v:o?o.v:0,ci:(q+r)%5})}},
-   frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,P.c[0],.35));ctx.fillRect(0,0,w,h);const k=1-Math.exp(-rdt/.25);
-    for(const o of this.c){o.v+=((o.on?1:0)-o.v)*k;const tr=mix([38,42,50],P.c[o.ci],o.v), /* off: dark grey track; on: full colour */x0=o.x-o.w/2,y0=o.y-o.h/2,rr=o.h/2;
+    for(let r=0;r<rows;r++)for(let q=0;q<cols;q++){const i=r*cols+q,o=old[i];const sw=Math.min(cw*.7,chh*1.4),sh=Math.min(sw*.46,chh*.6);this.c.push({x:ox+cw*(q+.5),y:oy+chh*(r+.5),w:sw,h:sh,on:o?o.on:false,v:o?o.v:0,sq:0,ci:(q+r)%5})}},
+   frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,P.c[0],.35));ctx.fillRect(0,0,w,h);const k=1-Math.exp(-rdt/.06),ks=Math.exp(-rdt/.12);
+    for(const o of this.c){o.v+=((o.on?1:0)-o.v)*k;o.sq*=ks;const tr=mix([38,42,50],P.c[o.ci],o.v), /* off: dark grey track; on: full colour */x0=o.x-o.w/2,y0=o.y-o.h/2,rr=o.h/2;
      ctx.fillStyle=rgb(tr);ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x0,y0,o.w,o.h,rr);else ctx.rect(x0,y0,o.w,o.h);ctx.fill();
-     ctx.fillStyle=rgb(mix([215,220,228],P.c[o.ci],.15));ctx.beginPath();ctx.arc(x0+rr+(o.w-2*rr)*sm(o.v),o.y,rr*.78,0,TAU);ctx.fill()}},
-   touch(x,y,k){if(k!=='down')return;for(const o of this.c)if(Math.abs(x-o.x)<o.w*.6&&Math.abs(y-o.y)<o.h*.9){o.on=!o.on;Sound.pop(o.on?420:340,o.on?330:260);return}}}}},
- squish:{name:'Squish',desc:'Press and stretch a soft blob',sound:'water',soundName:'Gentle water',pal:'warm',scale:1.5,fidget:true,moveGap:150,
-  make(){return{n:72,r:null,pr:null,init(){if(!this.r)this.r=new Float32Array(this.n).fill(1)},
-   frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,P.c[0],.4));ctx.fillRect(0,0,w,h);const cx=w/2,cy=h/2,R=Math.min(w,h)*.3,n=this.n,pr=this.pr,live=pr&&performance.now()-pr.at<600;
-    const pa=live?Math.atan2(pr.y-cy,pr.x-cx):0,pd=live?clamp(Math.hypot(pr.x-cx,pr.y-cy)/R,.45,1.35):1,k=1-Math.exp(-rdt/(live?.9:1.6)),MAXD=.35*rdt; // shape changes slowly, whatever the finger does
-    for(let i=0;i<n;i++){const an=i/n*TAU;let tg=1+.025*AMP*Math.sin(3*an+t*.4);if(live){let d=Math.abs(an-pa);d=Math.min(d,TAU-d);const f=Math.exp(-d*d/.18);tg=tg*(1-f)+pd*f}this.r[i]+=clamp((tg-this.r[i])*k,-MAXD,MAXD)}
+     ctx.fillStyle=rgb(mix([215,220,228],P.c[o.ci],.15));ctx.beginPath();ctx.arc(x0+rr+(o.w-2*rr)*sm(o.v),o.y,rr*(.78+.1*o.sq),0,TAU);ctx.fill()}},
+   touch(x,y,k){if(k!=='down')return;for(const o of this.c)if(Math.abs(x-o.x)<o.w*.6&&Math.abs(y-o.y)<o.h*.9){o.on=!o.on;o.sq=1;o.v+=((o.on?1:0)-o.v)*.3;Sound.play('wood',o.on?1:.8,.5);return}}}}},
+ squish:{name:'Squish',desc:'Press and stretch a soft blob',sound:'water',soundName:'Gentle water',pal:'warm',scale:1.5,fidget:true,ownMark:true,
+  /* The edge follows each finger at once (springy, like jelly) and wobbles gently back when let go; a soft dent shows under each finger */
+  make(){return{n:72,r:null,vr:null,pp:new Map(),ls:0,init(){if(!this.r){this.r=new Float32Array(this.n).fill(1);this.vr=new Float32Array(this.n)}},
+   frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,P.c[0],.4));ctx.fillRect(0,0,w,h);const cx=w/2,cy=h/2,R=Math.min(w,h)*.3,n=this.n,ps=[...this.pp.values()].filter(p=>p.on),held=ps.length>0;
+    const pa=ps.map(p=>[Math.atan2(p.y-cy,p.x-cx),clamp(Math.hypot(p.x-cx,p.y-cy)/R,.55,1.35)]),K=held?320:120,D=held?34:12,st=Math.min(rdt,.033);
+    for(let i=0;i<n;i++){const an=i/n*TAU;let tg=1+.025*AMP*Math.sin(3*an+t*.4);for(const [a,pd] of pa){let d=Math.abs(an-a);d=Math.min(d,TAU-d);const f=Math.exp(-d*d/.18);tg=tg*(1-f)+pd*f}
+     this.vr[i]+=(K*(tg-this.r[i])-D*this.vr[i])*st;this.vr[i]=clamp(this.vr[i],-3,3);this.r[i]+=this.vr[i]*st}
     const c=P.c[1],lc=mix(c,[235,228,220],.3),g=ctx.createRadialGradient(cx-R*.3,cy-R*.35,R*.1,cx,cy,R*1.2);g.addColorStop(0,rgb(lc));g.addColorStop(1,rgb(mix(c,P.bg,.3)));
-    ctx.fillStyle=g;ctx.beginPath();for(let i=0;i<=n;i++){const j=i%n,an=j/n*TAU,rr=R*this.r[j];const x=cx+Math.cos(an)*rr,y=cy+Math.sin(an)*rr;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath();ctx.fill()},
-   touch(x,y,k,now){this.pr={x,y,at:performance.now()}}}}},
+    ctx.fillStyle=g;ctx.beginPath();for(let i=0;i<=n;i++){const j=i%n,an=j/n*TAU,rr=R*this.r[j];const x=cx+Math.cos(an)*rr,y=cy+Math.sin(an)*rr;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath();ctx.fill();
+    for(const [id,p] of this.pp){p.a=p.on?Math.min(1,p.a+rdt/.03):p.a*Math.exp(-rdt/.15);if(!p.on&&p.a<.02){this.pp.delete(id);continue}
+     const dg=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,R*.35);dg.addColorStop(0,rgb(mix(c,[30,20,20],.55),.55*p.a));dg.addColorStop(1,rgb(c,0));ctx.fillStyle=dg;ctx.beginPath();ctx.arc(p.x,p.y,R*.35,0,TAU);ctx.fill()}},
+   touch(x,y,k,now,id){if(k==='down'){this.pp.set(id,{x,y,on:true,a:1,lx:x,ly:y});Sound.play('squelch',1,.45);return}const p=this.pp.get(id);if(!p)return;
+    if(k==='up'){p.on=false;Sound.play('boing',1,.35);return}p.x=x;p.y=y;if(Math.hypot(x-p.lx,y-p.ly)>40&&now-this.ls>140){this.ls=now;p.lx=x;p.ly=y;const d=Math.hypot(x-this.cw/2,y-this.ch/2)/(Math.min(this.cw,this.ch)*.3);Sound.play('stretch',.8+.4*clamp(d,0,1.4),.3)}}}}},
+
 };
 const ORDER=['wash','bubbles','ripples','stars','lava'],FORDER=['pop','spinner','switches','squish'];
 
 /* ---------- Renderer ---------- */
 const R={cv:$('#stage'),ctx:null,fx:null,id:null,run:false,raf:0,last:0,t:0,w:0,h:0,sc:1,fade:0,
- cur:{speed:.7,bright:.5,b1:.5,P:null,P1:null,ba:0,ba1:0},tgt:{speed:.7,bright:.5,pal:'blues'},breathe:false,bt:0,bphase:'',onFrame:null,
- start(id){this.stop();this.id=id;this.starts=(this.starts||0)+1;this.fx=FX[id].make();this.t=Math.random()*200;this.fade=0;this.bt=0;
+ cur:{speed:.7,bright:.5,b1:.5,P:null,P1:null,ba:0,ba1:0},tgt:{speed:.7,bright:.5,pal:'blues'},breathe:false,bt:0,bphase:'',onFrame:null,marks:[],held:new Map(),taps:0,
+ /* Instant touch feedback: a small soft ring and a glow under each finger, drawn on the very next frame. Each is a small local change
+    (well under 10% of the screen), so it does not go through the slow large-area limiter. */
+ press(x,y,id){this.taps++;if(this.marks.length>=24)this.marks.shift();this.marks.push({x,y,a:0});this.held.set(id,{x,y,a:1,on:true})},
+ drag(x,y,id){const h=this.held.get(id);if(h&&h.on){h.x=x;h.y=y}},
+ lift(id){const h=this.held.get(id);if(h)h.on=false},
+ drawMarks(ctx,rdt,P){if(!this.marks.length&&!this.held.size)return;const f=FX[this.id]||{},lc=mix(P.c[2],[236,238,242],.45),A=f.fidget?.32:.5;
+  this.marks=this.marks.filter(m=>(m.a+=rdt)<.6);ctx.lineWidth=3;
+  for(const m of this.marks){const p=m.a/.6,rr=14+34*sm(p);ctx.strokeStyle='rgba(0,0,0,'+(A*.6*(1-p)).toFixed(3)+')';ctx.lineWidth=5;ctx.beginPath();ctx.arc(m.x,m.y,rr+2,0,TAU);ctx.stroke();
+   ctx.strokeStyle=rgb(lc,A*(1-p));ctx.lineWidth=3;ctx.beginPath();ctx.arc(m.x,m.y,rr,0,TAU);ctx.stroke()} /* a light ring with a soft dark edge shows on any colour */
+  for(const [id,h] of this.held){if(!h.on){h.a*=Math.exp(-rdt/.15);if(h.a<.02){this.held.delete(id);continue}}if(f.ownMark)continue;
+   const g=ctx.createRadialGradient(h.x,h.y,0,h.x,h.y,32);g.addColorStop(0,rgb(lc,A*.9*h.a));g.addColorStop(.55,rgb(lc,A*.5*h.a));g.addColorStop(.8,'rgba(0,0,0,'+(A*.35*h.a).toFixed(3)+')');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(h.x-32,h.y-32,64,64)}},
+
+ start(id){this.stop();this.id=id;this.starts=(this.starts||0)+1;this.fx=FX[id].make();this.marks=[];this.held.clear();this.t=Math.random()*200;this.fade=0;this.bt=0;
   const p=PALS[this.tgt.pal],cp=()=>({bg:p.bgRGB.slice(),c:p.cRGB.map(c=>c.slice())});this.cur.P=cp();this.cur.P1=cp();this.cur.speed=this.tgt.speed;this.cur.bright=this.cur.b1=this.tgt.bright;this.cur.ba=this.cur.ba1=0;
   this.ctx=this.cv.getContext('2d',{alpha:false});this.resize();this.run=true;this.last=performance.now();this.raf=requestAnimationFrame(this.loop)},
  stop(){this.run=false;cancelAnimationFrame(this.raf);this.fx=null;$('#breathLabel').classList.remove('show')},
@@ -900,9 +981,10 @@ const R={cv:$('#stage'),ctx:null,fx:null,id:null,run:false,raf:0,last:0,t:0,w:0,
   for(let j=0;j<3;j++){c.P1.bg[j]+=(p.bgRGB[j]-c.P1.bg[j])*kp;c.P.bg[j]+=(c.P1.bg[j]-c.P.bg[j])*kp}
   c.P1.c.forEach((cc,i)=>{const q=c.P.c[i];for(let j=0;j<3;j++){cc[j]+=(p.cRGB[i][j]-cc[j])*kp;q[j]+=(cc[j]-q[j])*kp}});
   r.fade=Math.min(1,r.fade+rdt/1.2);const dt=rdt*c.speed;r.t+=dt;const ctx=r.ctx;
-  ctx.setTransform(r.sc,0,0,r.sc,0,0);ctx.globalAlpha=1;r.fx.frame(ctx,r.w,r.h,dt,r.t,c.P,rdt);
+  ctx.setTransform(r.sc,0,0,r.sc,0,0);ctx.globalAlpha=1;r.fx.frame(ctx,r.w,r.h,dt,r.t,c.P,rdt);r.drawMarks(ctx,rdt,c.P);
   if(c.ba>.003)r.drawBreath(ctx,rdt,c.ba);if(!r.breathe&&r.bphase){r.bphase='';$('#breathLabel').classList.remove('show')}
-  const b=clamp(c.bright,.25,.85)*(.7+.3*sm(r.fade)); // first frame already in colour; a quick lift, no black fade-inctx.fillStyle='rgba(0,0,0,'+(1-b).toFixed(4)+')';ctx.fillRect(0,0,r.w,r.h);
+  const b=clamp(c.bright,.25,.85)*(.7+.3*sm(r.fade)); // first frame already in colour; a quick lift, no black fade-in
+  ctx.fillStyle='rgba(0,0,0,'+(1-b).toFixed(4)+')';ctx.fillRect(0,0,r.w,r.h);
   if(r.onFrame)r.onFrame()},
  drawBreath(ctx,rdt,A){const g=prefs.gentler||RM.matches,ph=g?[5,2,7,2]:[4,1.5,6,1.5],tot=ph[0]+ph[1]+ph[2]+ph[3];this.bt=(this.bt+rdt)%tot;let t=this.bt,p,name;
   if(t<ph[0]){p=sm(t/ph[0]);name='Breathe in'}else if((t-=ph[0])<ph[1]){p=1;name='Hold'}else if((t-=ph[1])<ph[2]){p=1-sm(t/ph[2]);name='Breathe out'}else{p=0;name='Rest'}
@@ -948,7 +1030,7 @@ const VG={at:-1e9,gap:1300,q:[],t:0,
 const navOK=()=>true;
 const nav=fn=>VG.run('nav',fn,true);
 const once=fn=>function(e){const self=this;nav(()=>fn.call(self,e))};
-function defaults(id){return{speed:prefs.pace==='veryslow'?.45:.75,bright:vivid()?(prefs.light==='brighter'?.85:.78):(prefs.light==='brighter'?.7:.5),pal:FX[id].pal,sound:prefs.sound==='sound',vol:.6,breathe:!!prefs.breathe}}
+function defaults(id){return{speed:prefs.pace==='veryslow'?.45:.75,bright:vivid()?.85:(prefs.light==='brighter'?.7:.5),pal:FX[id].pal,sound:prefs.sound==='sound',vol:.6,breathe:!!prefs.breathe}}
 /* Small overlays (control bar, hint, toast) change at most once every 1.5 s each; a change that comes too soon is delayed, never dropped */
 function soft(el,cls,on){if(!el)return;if(!el.id)el.id='s'+Math.random().toString(36).slice(2);VG.run('soft:'+el.id,()=>{if(el.classList.contains(cls)===on)return false;el.classList.toggle(cls,on)})}
 function toast(msg,ms){const t=$('#toast');if(t.classList.contains('show')){t.textContent=msg}else{t.textContent=msg;soft(t,'show',true)}clearTimeout(toast.h);toast.h=setTimeout(()=>soft(t,'show',false),ms||3500)}
@@ -1029,16 +1111,29 @@ function kick(){clearTimeout(sheetT);sheetT=setTimeout(()=>{if($('#sheet').class
 
 /* Stage interaction: touches are rate-limited so mashing can't overload anything */
 const stage=$('#stage');let hold=null,lastDown=-1e9,lastMove=-1e9;
-/* Every input-driven visual change goes through here. Taps are limited to one every 600 ms and drags to one every 600 ms
-   (30 ms for the spinner and squish, whose movement is speed-capped), so mashing can never create fast brightness changes. */
-function feed(x,y,kind){if(!R.fx)return;const n=performance.now(),d=FX[R.id];
- if(kind==='down'){if(n-lastDown<(d.downGap||600))return;lastDown=n;lastMove=n;if(d.fidget&&prefs.haptic&&!prefs.hush&&navigator.vibrate){try{navigator.vibrate(8)}catch(e){}}}else{if(n-lastMove<(d.moveGap||600))return;lastMove=n}R.fx.touch(x,y,kind,n)}
+/* Touch path. Fidgets react to every touch and every movement at once (each change is small and local).
+   Scenes still rate-limit their large, slow effects (a tap every 600 ms), but every touch gets the instant ring/glow and a soft sound. */
+const lastNote=new Map();
+function feed(x,y,kind,id){if(!R.fx)return;const n=performance.now(),d=FX[R.id];id=id==null?1:id;
+ if(kind==='down'){R.press(x,y,id);if(d.fidget&&prefs.haptic&&!prefs.hush&&navigator.vibrate){try{navigator.vibrate(8)}catch(e){}}
+  if(!d.fidget){lastNote.set(id,{x,y,t:n});sceneSound(x,y)}
+  if(d.fidget){R.fx.touch(x,y,kind,n,id);return}if(n-lastDown<(d.downGap||600))return;lastDown=n;lastMove=n}
+ else if(kind==='up'){R.lift(id);lastNote.delete(id);if(d.fidget)R.fx.touch(x,y,'up',n,id);return}
+ else{R.drag(x,y,id);if(d.fidget){R.fx.touch(x,y,kind,n,id);return}const ln=lastNote.get(id);if(ln&&Math.hypot(x-ln.x,y-ln.y)>70&&n-ln.t>160){lastNote.set(id,{x,y,t:n});sceneSound(x,y)}
+  if(n-lastMove<(d.moveGap||600))return;lastMove=n}R.fx.touch(x,y,kind,n)}
+/* Each scene's touch sound: a soft pentatonic note (pitch follows the finger across the screen), a bubble or a water drop. */
+const PENT=[196,220,261.63,293.66,329.63,392,440];
+function sceneSound(x,y){const w=R.w||innerWidth,i=clamp(Math.floor(x/w*PENT.length),0,PENT.length-1),f=PENT[i],id=R.id;
+ if(id==='bubbles')Sound.play('bloop',.8+.4*(1-y/(R.h||innerHeight)),.45);else if(id==='ripples')Sound.play('drop',f/392,.4);
+ else if(id==='stars')Sound.play('note',f*1.25/261.63,.3);else if(id==='lava')Sound.play('note',f*.6/261.63,.42);else Sound.play('note',f/261.63,.36)}
 function ptr(e){const r=stage.getBoundingClientRect();return[clamp(e.clientX-r.left,0,r.width),clamp(e.clientY-r.top,0,r.height)]}
-stage.addEventListener('pointerdown',e=>{const[x,y]=ptr(e);feed(x,y,'down');
+stage.addEventListener('pointerdown',e=>{const[x,y]=ptr(e);try{stage.setPointerCapture(e.pointerId)}catch(_){}feed(x,y,'down',e.pointerId);
  if(classroom){if(e.isPrimary)startHold(x,y);else cancelHold()}else if($('#sheet').classList.contains('open'))hideSheet();else showBar()});
-stage.addEventListener('pointermove',e=>{if(!e.buttons&&e.pointerType==='mouse')return;const[x,y]=ptr(e);feed(x,y,'move');
+stage.addEventListener('pointermove',e=>{if(!e.buttons&&e.pointerType==='mouse')return;const[x,y]=ptr(e);feed(x,y,'move',e.pointerId);
  if(hold&&e.isPrimary&&Math.hypot(x-hold.x,y-hold.y)>60)cancelHold()});
-['pointerup','pointercancel','pointerleave'].forEach(ev=>stage.addEventListener(ev,cancelHold));
+['pointerup','pointercancel','pointerleave'].forEach(ev=>stage.addEventListener(ev,e=>{cancelHold();if(ev!=='pointerleave'||!stage.hasPointerCapture||!stage.hasPointerCapture(e.pointerId)){const[x,y]=ptr(e);feed(x,y,'up',e.pointerId)}}));
+/* Wake the sound engine on the very first touch anywhere, and keep it running, so taps sound at once */
+document.addEventListener('pointerdown',()=>{if(!prefs.hush)Sound.ensure()},{capture:true,passive:true});
 let holdCool=0;const inCorner=(x,y)=>{if(x===-999)return true;const r=stage.getBoundingClientRect(),z=Math.max(90,Math.min(r.width,r.height)*.15);return y<z&&(x<z||x>r.width-z)};
 function startHold(x,y){cancelHold();if(Date.now()<holdCool||!inCorner(x,y))return;hold={x,y,t:setTimeout(()=>{cancelHold();Gate.open(exitClassroom,true)},3000)};$('#hold').classList.add('on')}
 function cancelHold(){if(hold){clearTimeout(hold.t);hold=null}$('#hold').classList.remove('on')}
@@ -1380,14 +1475,15 @@ $('#dayBtn').onclick=once(()=>{$('#dayEdit').hidden=true;drawDay();show('day')})
 loadOwn();
 
 /* ---------- Sound mixer: layered background sound, each layer ramps slowly, total capped by the same limiter ---------- */
-const MIXCH=[['rain','Rain'],['brown','Brown noise'],['waves','Waves'],['hum','Soft hum']];
-const Mixer={on:false,bus:null,g:{},nodes:[],lv:Object.assign({rain:.5,brown:0,waves:0,hum:0,vol:.4},store.get('mix',{})),
+const MIXCH=[['rain','Rain'],['brown','Brown noise'],['pink','Pink noise'],['waves','Waves'],['hum','Soft pad']];
+const Mixer={on:false,bus:null,g:{},nodes:[],lv:Object.assign({rain:.5,brown:0,pink:0,waves:0,hum:0,vol:.4},store.get('mix',{})),
  build(){const c=Sound.ctx,mk=(...a)=>{for(let i=0;i<a.length-1;i++)a[i].connect(a[i+1]);return a[a.length-1]};this.bus=Sound.gain(0);this.bus.connect(Sound.master);this.nodes=[];const keep=Sound.nodes;Sound.nodes=this.nodes;
   for(const [k] of MIXCH){const g=this.g[k]=Sound.gain(0);g.connect(this.bus);
-   if(k==='rain'){mk(Sound.src('pink'),Sound.filt('highpass',500),Sound.filt('lowpass',4500),Sound.gain(.45),g);mk(Sound.src('brown'),Sound.filt('lowpass',260),Sound.gain(.4),g)}
+   if(k==='rain'){mk(Sound.src('pink'),Sound.filt('highpass',250),Sound.filt('lowpass',1300),Sound.filt('lowpass',1800),Sound.gain(.42),g);mk(Sound.src('brown'),Sound.filt('lowpass',260),Sound.gain(.4),g)}
    else if(k==='brown'){mk(Sound.src('brown'),Sound.filt('lowpass',340),Sound.gain(.9),g)}
+   else if(k==='pink'){mk(Sound.src('pink'),Sound.filt('highpass',60),Sound.filt('lowpass',1200),Sound.filt('lowpass',1500),Sound.gain(.55),g)}
    else if(k==='waves'){const w=Sound.gain(.5);Sound.lfo(w.gain,.08,.35);mk(Sound.src('brown'),Sound.filt('lowpass',600),w,g)}
-   else{const a=Sound.gain(.04);Sound.lfo(a.gain,.02,.015);mk(Sound.osc(110),a,g);const b=Sound.gain(.025);mk(Sound.osc(164.81),b,g);mk(Sound.src('pink'),Sound.filt('lowpass',420),Sound.gain(.1),g)}}
+   else{[110,164.81,220].forEach((f,i)=>{const a=Sound.gain(.035);Sound.lfo(a.gain,.02+i*.009,.018);mk(Sound.osc(f,'triangle'),Sound.filt('lowpass',520),a,g)});mk(Sound.src('pink'),Sound.filt('lowpass',420),Sound.gain(.08),g)}}
   this.nodes=Sound.nodes;Sound.nodes=keep},
  level(k,v){this.lv[k]=clamp(+v||0,0,1);store.set('mix',this.lv);if(this.on&&this.g[k]){const n=Sound.ctx.currentTime;this.g[k].gain.cancelScheduledValues(n);this.g[k].gain.setTargetAtTime(this.lv[k]*.7,n,.8)}},
  vol(v){this.lv.vol=clamp(+v||0,0,1);store.set('mix',this.lv);if(this.on)Sound.setVol(this.lv.vol)},
