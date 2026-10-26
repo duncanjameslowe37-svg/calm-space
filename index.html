@@ -831,10 +831,10 @@ const Sound={ctx:null,master:null,bus:null,nodes:[],type:null,vol:.6,MAX:.26,CEI
  ROOT:{chime:261.63,tw:783.99,note:261.63,mallet:261.63,plink:392,drop:392},
  ALIAS:{bloopUp:['bloop',293.66/220]},
  /* each real sound's low-pass (Hz, 24 dB/octave), tuned by measurement so every take passes the same calm limits as the real pops (sound-check.js) */
- SLP:{chime:1600,note:1600,bowl:1400,blub:1600,air:2000},
+ SLP:{chime:1600,note:1600,bowl:1400,blub:1600,air:2000,plink:5200,drop:5200,wood:2300,tick:5200,ui:1600,thock:2300,squelch:1400,page:3500,swish:5200},
  /* per-sound level trim (so the recordings sit at the same loudness as the modelled sounds) and a few-millisecond soft attack
     for the sounds whose recorded start is sharpest - it takes the edge off the very first moment without changing the sound */
- PK:{},RG:{chime:.568,note:.667,blub:.55}, /* tuned 26 Oct (tune5, every take measured against the app's strict sound limits): each real take level-matched to its modelled sound and kept soft. Recordings that could not meet the limits (plink, drop, tw, mallet, ui, thock, bloop) are not shipped; those keep the modelled sound */ATK:{plink:.006,drop:.006,mallet:.005,tw:.006,tick:.004,squelch:.008,wood:.002,thock:.002,ui:.002},
+ PK:{},RG:{chime:.568,note:.667,blub:.55,plink:.81,drop:.874,wood:.892,tick:.657,ui:.742,thock:.881,squelch:.687,page:.679,swish:.769}, /* tuned 26 Oct (tune5, every take measured against the app's strict sound limits): each real take level-matched to its modelled sound and kept soft. Recordings that could not meet the limits (plink, drop, tw, mallet, ui, thock, bloop) are not shipped; those keep the modelled sound */ATK:{plink:.006,drop:.006,mallet:.005,tw:.006,tick:.004,squelch:.008,wood:.002,thock:.002,ui:.002},
  atk(g,v,t,nm){const a=this.ATK[nm];if(a){g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+a)}else g.gain.value=v},
  lastV:{},
  loadSnd(c){if(this.sndP)return this.sndP;if(!c||!c.decodeAudioData)return Promise.resolve(null);
@@ -862,6 +862,23 @@ const Sound={ctx:null,master:null,bus:null,nodes:[],type:null,vol:.6,MAX:.26,CEI
  bedLoop(k,g,lp,hp,dest){const B=this.snd&&this.snd.beds[k];dest=dest||this.hb;if(!B||!dest)return false;const c=this.ctx,o=Math.random()*B.duration,f=this.filt('lowpass',lp||5000,.54),f2=this.filt('lowpass',lp||5000,1.31),gn=this.gain(g);f2.connect(f);
   let last=f;if(hp){const h=this.filt('highpass',hp,.5);f.connect(h);last=h}last.connect(gn);gn.connect(dest);
   [[-.55,0],[.55,.5]].forEach(([p,d])=>{const s=c.createBufferSource();s.buffer=B;s.loop=true;s.playbackRate.value=1+(d?.004:0);const pn=this.pan(p);s.connect(pn);pn.connect(f2);s.start(c.currentTime,(o+d*B.duration)%B.duration);this.nodes.push(s)});return gn},
+ /* Deploy 3: the spinner's bearing whirr. A real recording (a fidget spinner on a wooden table, Freesound 500315, CC0 - see README) is looped;
+    its pitch, brightness and level follow the spin speed. One voice with smooth level changes; it fades out by itself if the spinner stops
+    updating it (scene closed, app hidden) and it respects Hush. If the recording can't load, a soft modelled whirr is used. */
+ WG:.36,
+ whirr(sp,t){const live=!this.off;if(live&&(prefs.hush||!S||!S.sound))sp=0;const c=this.ctx;if(!c||!this.popBus)return;let v=this.wv;
+  if(!v){if(sp<.3||(live&&c.state!=='running'))return;const B=(this.snd&&this.snd.beds&&this.snd.beds.whirr)||this.whirrBuf(c);
+   const s=c.createBufferSource(),g=this.gain(0),f=this.filt('lowpass',900,.6),f2=this.filt('lowpass',900,1.1),hp=this.filt('highpass',100,.5);s.buffer=B;s.loop=true;
+   s.connect(hp);hp.connect(f);f.connect(f2);f2.connect(g);g.connect(this.popBus);s.start(t!=null?t:c.currentTime,Math.random()*B.duration*.9);
+   v=this.wv={s,g,f,f2,hp,last:performance.now(),z:0};if(live)v.tm=setInterval(()=>{if(this.wv!==v){clearInterval(v.tm);return}if(performance.now()-v.last>300||prefs.hush||!S||!S.sound)this.whirrStop()},200)}
+  const n=t!=null?t:c.currentTime,k=Math.min(1,sp/25),gv=this.WG*sm((sp-.3)/2.2)*(.45+.55*k);
+  v.g.gain.setTargetAtTime(gv,n,.06);v.s.playbackRate.setTargetAtTime(.6+.62*k,n,.08);const fc=600+1600*k;v.f.frequency.setTargetAtTime(fc,n,.08);v.f2.frequency.setTargetAtTime(fc,n,.08);v.last=performance.now();
+  if(live){v.z=gv<.001?v.z+1:0;if(v.z>180)this.whirrStop()}},
+ whirrStop(){const v=this.wv;if(!v)return;this.wv=null;clearInterval(v.tm);try{const n=this.ctx.currentTime;v.g.gain.cancelScheduledValues(n);v.g.gain.setTargetAtTime(0,n,.05);v.s.stop(n+.4)}catch(e){}
+  setTimeout(()=>{try{v.s.disconnect();v.g.disconnect();v.f.disconnect();v.f2.disconnect();v.hp.disconnect()}catch(e){}},800)},
+ whirrBuf(c){if(this.wb&&this.wb.sampleRate===c.sampleRate)return this.wb;const sr=c.sampleRate,n=sr*2,b=c.createBuffer(1,n,sr),d=b.getChannelData(0);let a=0,a2=0;
+  for(let i=0;i<n;i++){a+=((Math.random()*2-1)-a)*.06;a2+=(a-a2)*.06;d[i]=a2*(1+.3*Math.sin(TAU*15*i/sr))*4}
+  const m=Math.round(sr*.05);for(let i=0;i<m;i++){const q=i/m;d[i]=d[i]*q+d[n-m+i]*(1-q)}return this.wb=b},
  ensure(){if(this.off)return true;if(!this.ctx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;
    let c;try{c=new AC({latencyHint:'interactive'})}catch(e){c=new AC()}this.ctx=c;this.build(c);
    try{if(c.createConstantSource){const k=c.createConstantSource(),z=c.createGain();z.gain.value=0;k.connect(z);z.connect(c.destination);k.start()}}catch(e){} /* silent keep-alive: the audio stays warm so taps sound at once */
@@ -970,9 +987,9 @@ note(f,t,gain,bus,buf){const nm=buf||'note',s=this.ctx.createBufferSource(),g=th
    this.lfo(g.gain,.031+i*.013,gn*.45*1.41);this.lfo(v.fl.frequency,.017+i*.007,lp*.25);for(let k=1;k<N;k++)v.os.forEach(o=>o.frequency.setTargetAtTime(ch[k%ch.length][i],n0+k*per,1.3))})},
  pad(fs,gn,lp,chain){fs.forEach((f,i)=>{const g=this.gain(gn*1.41);this.lfo(g.gain,.025+i*.011,gn*.6*1.41);const v=this.voice(f,'triangle',lp,g,chain);this.lfo(v.fl.frequency,.013+i*.006,lp*.2)})},
  /* Render the real sound chain offline (for the sound check): returns the rendered AudioBuffer */
- async offline(secs,fn){await this.sndReady();const keep={};const F=['ctx','master','tapBus','hb','popBus','popCtx','popBufs','an','bus','nodes','type','fading','nb','bank','taps','mus','pops'];F.forEach(k=>keep[k]=this[k]);
+ async offline(secs,fn){await this.sndReady();const keep={};const F=['ctx','master','tapBus','hb','wv','popBus','popCtx','popBufs','an','bus','nodes','type','fading','nb','bank','taps','mus','pops'];F.forEach(k=>keep[k]=this[k]);
   const mk={};['bus','g','nodes'].forEach(k=>mk[k]=Mixer[k]);
-  const oc=new OfflineAudioContext(2,Math.round(44100*secs),44100);this.off=true;this.ctx=oc;this.bus=null;this.hb=null;this.nodes=[];this.fading=[];this.type=null;this.mus=null;this.pops=0;
+  const oc=new OfflineAudioContext(2,Math.round(44100*secs),44100);this.off=true;this.ctx=oc;this.bus=null;this.hb=null;this.wv=null;this.nodes=[];this.fading=[];this.type=null;this.mus=null;this.pops=0;
   let buf;try{this.build(oc);this.master.gain.value=this.vol*this.MAX;fn(this,oc);if(this.mus)this.sched(secs);buf=await oc.startRendering()}
   finally{this.off=false;F.forEach(k=>this[k]=keep[k]);Object.assign(Mixer,mk)}return buf},
  setVol(v){v=clamp(+v||0,0,1);this.vol=v;if(!this.ctx)return;const g=this.master.gain,n=this.ctx.currentTime;g.cancelScheduledValues(n);g.setValueAtTime(g.value,n);g.linearRampToValueAtTime(clamp(v,0,1)*this.MAX,n+1);const tb=this.tapBus.gain;tb.cancelScheduledValues(n);tb.setValueAtTime(tb.value,n);tb.linearRampToValueAtTime(v*this.MAX,n+.1);if(this.popBus){const pb=this.popBus.gain;pb.cancelScheduledValues(n);pb.setValueAtTime(pb.value,n);pb.linearRampToValueAtTime(v*this.MAX,n+.1)}},
@@ -1094,7 +1111,7 @@ const FX={
     let l=this.ln.get(id);if(!l){l={dg,t:now,x,y};this.ln.set(id,l)}
     const d=Math.hypot(x-l.x,y-l.y),st=mn*.03;if(d>=st){const n=Math.min(12,Math.floor(d/st)),g=1/(1+(this.en||0));this.en=(this.en||0)+.04*n;for(let i=1;i<=n;i++){const px=l.x+(x-l.x)*i/n,py=l.y+(y-l.y)*i/n;this.addTr(px,py,this.hue(px,py),1,g)}l.x=x;l.y=y;if(Math.random()<g*.6)this.spark(x,y,hu,1);const s=this.hs.get(id);if(s)s.le=this.rt}
     if(dg!==l.dg&&now-l.t>120){l.dg=dg;l.t=now;Sound.play('mallet',SC[dg]/261.63,.2)}}}}},
- bubbles:{name:'Floating bubbles',desc:'Pop the bubbles. Touch and hold empty space to blow a new one',sound:'water',soundName:'Gentle water',pal:'greens',scale:1.25,live:true,ownMark:true,noRing:true,ownSound:true,
+ bubbles:{name:'Floating bubbles',desc:'Pop the bubbles. Touch and hold empty space to blow a new one',sound:'water',soundName:'Gentle water',pal:'greens',scale:1.1,live:true,ownMark:true,noRing:true,ownSound:true,
   /* v2: soap bubbles with a thin iridescent film, highlights and a gentle wobble. Touching or sliding across a bubble pops it in the same frame
      (a fading ring and a few droplets, and a soft pop: bigger bubble = lower pitch). A new bubble swells somewhere else over 1.5 s, so the screen
      never empties (10-22 bubbles, at most 30). Touch empty space and hold to blow a bubble; it floats off when you let go (or by itself after 2.6 s). */
@@ -1283,7 +1300,7 @@ const FX={
   make(){return{bl:[],gw:0,gh:0,rt:0,grab:new Map(),th:0,thA:0,thB:0,tf:9,lastT:-9,lastB:-9,lastS:0,
    TH:[[[70,24,78],[248,128,40]],[[24,52,150],[240,92,172]],[[8,84,96],[176,232,64]],[[112,20,84],[250,200,56]],[[62,28,138],[64,222,208]],[[18,70,40],[250,150,60]]],
    geo(w,h){const H=h*.92,top=h*.04,Lw=Math.min(w*.74,H*.46),cx=w/2,yg0=top+H*.13,yg1=top+H*.75,yb1=top+H;return{H,top,Lw,cx,yg0,yg1,yb1,Hg:yg1-yg0,hw:y=>Lw*(.19+.27*Math.pow(clamp((y-yg0)/(yg1-yg0),0,1),.9))}},
-   init(w,h){const G=this.G=this.geo(w,h),gw=this.GW||140,cell=G.Lw*.94/gw,gh=Math.ceil(G.Hg/cell);this.cell=cell;
+   init(w,h){const G=this.G=this.geo(w,h),gw=this.GW||112,cell=G.Lw*.94/gw,gh=Math.ceil(G.Hg/cell);this.cell=cell;
     if(gw!==this.gw||gh!==this.gh){this.gw=gw;this.gh=gh;this.off=document.createElement('canvas');this.off.width=gw;this.off.height=gh;this.octx=this.off.getContext('2d');this.img=this.octx.createImageData(gw,gh)}
     if(!this.bl.length)for(let i=0;i<6;i++){const v=.15+.75*i/5;this.bl.push(this.mkB((i%2?.5:-.5)*(.5+.5*Math.random()),v,.07+Math.random()*.06,v>.5?.7:.35))}},
    mkB(u,v,r,temp){return{u,v,r,temp,vu:0,vv:0,ph:Math.random()*TAU,age:0}},
@@ -1325,7 +1342,7 @@ const FX={
     const YR=new Float32Array(n),XR=new Float32Array(n),AC=new Int32Array(n);for(let i=0;i<n;i++){const rr=Math.sqrt(R2[i])*4.7;YR[i]=rr/Math.sqrt(E2[i]);XR[i]=rr}
     for(let y=0,p=0;y<gh;y++){const py=G.yg0+(y+.5)*cell,hw=G.hw(py);let na=0;for(let i=0;i<n;i++)if(Math.abs(y-Y[i])<YR[i])AC[na++]=i;
      for(let x=0;x<gw;x++,p++){const dx=bx+(x+.5)*cell-G.cx;if(Math.abs(dx)>hw+cell*2){F[p]=0;FX[p]=0;FY[p]=0;continue}
-     let f,fx=0,fy=0;const e=(y-pl-SX[x])/ps;if(e>3)f=20;else{f=1.3*Math.exp(e);fy=f/ps;fx=-f*CX[x]/ps}
+     let f=0,fx=0,fy=0;const e=(y-pl-SX[x])/ps;if(e>3)f=20;else if(e>-14){f=1.3*Math.exp(e);fy=f/ps;fx=-f*CX[x]/ps}
      for(let k=0;k<na;k++){const i=AC[k];if(Math.abs(x-X[i])>XR[i])continue;const ddx=x-X[i],ddy=y-Y[i],D=ddx*ddx+ddy*ddy*E2[i]+1,gq=R2[i]/D,g2=gq*gq;f+=g2;const c=-4*g2/D;fx+=c*ddx;fy+=c*ddy*E2[i]}F[p]=f;FX[p]=fx;FY[p]=fy}}
     /* pass 2: shading. Backlit liquid (brighter and warmer towards the light below). Each blob is shaded as a glossy, translucent 3D
        surface: normals from the field gradient (rounded towards the edge), soft diffuse light and a small glossy highlight from the
@@ -1459,74 +1476,192 @@ const FX={
     if(this.flip)return;if(k==='move'&&(!hit||this.last.get(id)===hit))return;if(!hit){this.last.set(id,null);return}this.last.set(id,hit);hit.sq=1;if(now-(hit.ft||-1e9)<400){Sound.play(hit.t?'bloop':'bloopUp',.9+.05*hit.ci,.3);return}hit.ft=now;hit.t=1-hit.t;hit.v+=(hit.t-hit.v)*.35;
     Sound.play(hit.t?'bloop':'bloopUp',.9+.05*hit.ci,.5);
     if(!this.done&&this.c.every(o=>o.t)){this.done=true;this.doneAt=now;[1,1.25,1.5].forEach((r,i)=>setTimeout(()=>Sound.play('chime',r,.2),180+i*160))}else if(this.done&&!this.c.every(o=>o.t))this.done=false}}}},
- spinner:{name:'Spinner',desc:'Drag to spin. It slows down by itself',sound:'brown',soundName:'Brown noise',pal:'blues',scale:1.5,fidget:true,
-  /* The spinner follows the finger directly (up to 1.2 turns a second), then carries on with momentum (at most half a turn a second) and slows by itself.
-     When it moves fast it blurs into a smooth disc, as a real spinner looks, so the lobes never strobe: above 1.2 rad/s the
-     sharp shape fades into its time-averaged image and is fully smooth by 2 rad/s (lobes then pass any point < once a second). */
-  make(){return{a:0,w:0,dr:null,vel:0,tk:0,lt:0,ld:0,sps:0,pend:0,init(){},
-   frame(ctx,w,h,dt,t,P,rdt){const MAXW=.5*TAU,a0=this.a;
-    if(this.dr&&performance.now()-this.dr.t>120)this.vel*=Math.exp(-rdt/.08);
-    if(this.pend){const mx=1.2*TAU*rdt,st=clamp(this.pend,-mx,mx);this.a+=st;this.pend-=st}
-    if(!this.dr){this.w=clamp(this.w,-MAXW,MAXW);this.w*=Math.exp(-rdt*.45);this.a+=this.w*rdt}
-    const sp=Math.abs((this.a-this.ld)/Math.max(rdt,.001));this.ld=this.a;this.sps=sp>this.sps?sp:this.sps+(sp-this.sps)*(1-Math.exp(-rdt/.3));
-    const tk=Math.floor(this.a/(TAU/3));if(tk!==this.tk){this.tk=tk;const n=performance.now();if(n-this.lt>70){this.lt=n;Sound.play('tick',1,.2+.22*Math.min(1,sp/MAXW))}}
-    ctx.fillStyle=rgb(mix(P.bg,P.c[0],.45));ctx.fillRect(0,0,w,h);
-    {const cx=w/2,cy=h/2,R=Math.min(w,h)*.3,sg=ctx.createRadialGradient(cx+R*.04,cy+R*.1,R*.5,cx+R*.04,cy+R*.1,R*1.15);sg.addColorStop(0,'rgba(0,0,0,.3)');sg.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=sg;ctx.beginPath();ctx.arc(cx+R*.04,cy+R*.1,R*1.15,0,TAU);ctx.fill()}
-    const cx=w/2,cy=h/2,R=Math.min(w,h)*.3,body=mix(P.bg,P.c[1],.9),lobe=mix(mix(P.bg,P.c[1],.9),P.c[2],.5),cap=mix(body,[220,226,235],.35);
-    const kbt=sm(clamp((this.sps-1.2)/.8,0,1));if(kbt>=(this.kb||0)){this.kb=kbt;this.kh=0}else{this.kh=(this.kh||0)+rdt;if(this.kh>.4)this.kb=Math.max(kbt,this.kb-rdt/1.5)}const kb=this.kb>.995?1:this.kb<.005?0:this.kb;
-    if(kb>0){/* time-averaged spinner: colour at each radius = mix of what passes over it, weighted by angular coverage */
-     const cov=(r,d,rho)=>r<1e-6?(d<rho?1:0):r<=rho-d?1:(r>=d+rho||r<=d-rho)?0:3*Math.acos(clamp((r*r+d*d-rho*rho)/(2*r*d),-1,1))/Math.PI;
-     const g=ctx.createRadialGradient(cx,cy,0,cx,cy,R*1.02),bgc=mix(P.bg,P.c[0],.45);
-     for(let i=0;i<=16;i++){const r=i/16*1.02,cb=Math.max(cov(r,.62,.38),r<=.42?1:0),cl=cov(r,.62,.22),cc=r<=.18?1:0;
-      let col=mix(bgc,body,Math.min(1,cb));col=mix(col,lobe,Math.min(1,cl));col=mix(col,cap,cc);g.addColorStop(i/16,rgb(col))}
-     ctx.globalAlpha=kb;ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R*1.02,0,TAU);ctx.fill();ctx.globalAlpha=1}
-    const N=kb>=1?0:this.sps>.6?4:1,spread=Math.min(TAU/3,this.sps*.05);ctx.globalAlpha=N>1?1-Math.pow(kb,1/N):1-kb;
-    for(let s=0;s<N;s++){const an0=this.a-(N>1?spread*s/(N-1):0);ctx.save();ctx.translate(cx,cy);ctx.rotate(an0);{const ca=Math.cos(-an0),sa=Math.sin(-an0),lx=-.28*R,ly=-.34*R,gx=lx*ca-ly*sa,gy=lx*sa+ly*ca,bg2=ctx.createRadialGradient(gx,gy,R*.05,gx,gy,R*1.45);bg2.addColorStop(0,rgb(mix(body,cap,.32)));bg2.addColorStop(.55,rgb(body));bg2.addColorStop(1,rgb(mix(body,P.bg,.35)));ctx.fillStyle=bg2;this.spl=[ca,sa]}
-     for(let i=0;i<3;i++){const an=i*TAU/3,x=Math.cos(an)*R*.62,y=Math.sin(an)*R*.62;ctx.beginPath();ctx.arc(x,y,R*.38,0,TAU);ctx.fill()}
-     ctx.beginPath();ctx.arc(0,0,R*.42,0,TAU);ctx.fill();ctx.fillStyle=rgb(lobe);
-     for(let i=0;i<3;i++){const an=i*TAU/3,lx=Math.cos(an)*R*.62,ly=Math.sin(an)*R*.62,[ca,sa]=this.spl,ox=-.07*R,oy=-.08*R,hx=lx+ox*ca-oy*sa,hy=ly+ox*sa+oy*ca;ctx.fillStyle=rgb(mix(lobe,P.bg,.28));ctx.beginPath();ctx.arc(lx,ly,R*.235,0,TAU);ctx.fill();const lg=ctx.createRadialGradient(hx,hy,R*.01,lx,ly,R*.22);lg.addColorStop(0,rgb(mix(lobe,cap,.45)));lg.addColorStop(.6,rgb(lobe));lg.addColorStop(1,rgb(mix(lobe,P.bg,.2)));ctx.fillStyle=lg;ctx.beginPath();ctx.arc(lx,ly,R*.2,0,TAU);ctx.fill();ctx.strokeStyle='rgba(0,0,0,.22)';ctx.lineWidth=R*.018;ctx.beginPath();ctx.arc(lx,ly,R*.12,0,TAU);ctx.stroke()}
-     ctx.fillStyle=rgb(cap);ctx.beginPath();ctx.arc(0,0,R*.18,0,TAU);ctx.fill();ctx.restore()}ctx.globalAlpha=1;
-    {const hg=ctx.createRadialGradient(cx-R*.06,cy-R*.07,0,cx-R*.06,cy-R*.07,R*.12);hg.addColorStop(0,'rgba(228,230,236,.5)');hg.addColorStop(1,'rgba(228,230,236,0)');ctx.fillStyle=hg;ctx.beginPath();ctx.arc(cx-R*.06,cy-R*.07,R*.12,0,TAU);ctx.fill();
-     ctx.strokeStyle=rgb(mix(cap,[40,44,52],.5),.45);ctx.lineWidth=Math.max(1.5,R*.02);ctx.beginPath();ctx.arc(cx,cy,R*.18,0,TAU);ctx.stroke()}},
-   touch(x,y,k,now,id){const an=Math.atan2(y-this.ch/2,x-this.cw/2);
-    if(k==='down'){if(this.dr)return;this.dr={id,an,t:now};this.w*=.3;this.vel=0;Sound.play('tick',.8,.3);return}
-    if(!this.dr||this.dr.id!==id)return;
-    if(k==='up'){this.w=clamp(this.vel,-.5*TAU,.5*TAU);this.dr=null;return}
-    let d=an-this.dr.an;if(d>Math.PI)d-=TAU;if(d<-Math.PI)d+=TAU;const s=Math.max(.008,(now-this.dr.t)/1000),cap=1.2*TAU*s;d=clamp(d,-cap,cap);
-    this.pend=clamp(this.pend+d,-TAU/3,TAU/3);this.vel=this.vel*.5+(d/s)*.5;this.dr={id,an,t:now}}}}},
- switches:{name:'Switches',desc:'Soft switches to flick on and off',sound:'brown',soundName:'Brown noise',pal:'greens',scale:1.5,fidget:true,
-  make(){return{c:[],init(w,h){const L=w>=h,cols=L?4:2,rows=L?3:6,cw=w*.8/cols,chh=h*.76/rows,ox=(w-cw*cols)/2,oy=(h-chh*rows)/2,old=this.c;this.c=[];
-    for(let r=0;r<rows;r++)for(let q=0;q<cols;q++){const i=r*cols+q,o=old[i];const sw=Math.min(cw*.7,chh*1.4),sh=Math.min(sw*.46,chh*.6);this.c.push({x:ox+cw*(q+.5),y:oy+chh*(r+.5),w:sw,h:sh,on:o?o.on:false,v:o?o.v:0,sq:0,ci:(q+r)%5})}},
-   frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,P.c[0],.35));ctx.fillRect(0,0,w,h);const k=1-Math.exp(-rdt/.06),ks=Math.exp(-rdt/.12);
-    for(const o of this.c){o.v+=((o.on?1:0)-o.v)*k;o.sq*=ks;const tr=mix([38,42,50],P.c[o.ci],o.v), /* off: dark grey track; on: full colour */x0=o.x-o.w/2,y0=o.y-o.h/2,rr=o.h/2;
-     const pill=(x,y,w,h,r)=>{ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,w,h,r);else ctx.rect(x,y,w,h)};
-     ctx.fillStyle=rgb(mix(P.bg,[0,0,0],.25),.55);pill(x0-2,y0-2,o.w+4,o.h+5,rr+2);ctx.fill(); /* recess around the track */
-     {const g=ctx.createLinearGradient(0,y0,0,y0+o.h);g.addColorStop(0,rgb(mix(tr,[0,0,0],.3)));g.addColorStop(.45,rgb(tr));g.addColorStop(1,rgb(mix(tr,[220,224,232],.1)));ctx.fillStyle=g;pill(x0,y0,o.w,o.h,rr);ctx.fill()}
-     {const dx=x0+rr*.95,lg=ctx.createRadialGradient(dx,o.y,0,dx,o.y,rr*.5);lg.addColorStop(0,rgb(mix(P.c[o.ci],[230,232,236],.4),.85*o.v));lg.addColorStop(1,rgb(P.c[o.ci],0));ctx.fillStyle=lg;ctx.beginPath();ctx.arc(dx,o.y,rr*.5,0,TAU);ctx.fill()} /* little light on the left, glowing when on */
-     const kx=x0+rr+(o.w-2*rr)*sm(o.v),kr=rr*(.78+.1*o.sq),kc=mix([215,220,228],P.c[o.ci],.15);
-     ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.arc(kx+kr*.06,o.y+kr*.14,kr*1.02,0,TAU);ctx.fill();
-     {const g=ctx.createRadialGradient(kx-kr*.35,o.y-kr*.4,kr*.08,kx,o.y,kr);g.addColorStop(0,rgb(mix(kc,[236,236,240],.25)));g.addColorStop(.7,rgb(kc));g.addColorStop(1,rgb(mix(kc,[60,64,72],.35)));ctx.fillStyle=g;ctx.beginPath();ctx.arc(kx,o.y,kr,0,TAU);ctx.fill()}
-     ctx.strokeStyle=rgb(mix(kc,[80,84,92],.5),.35);ctx.lineWidth=Math.max(1,kr*.06);for(const s of [-1,0,1]){ctx.beginPath();ctx.moveTo(kx+s*kr*.22,o.y-kr*.32);ctx.lineTo(kx+s*kr*.22,o.y+kr*.32);ctx.stroke()}}}, /* grip lines on the knob */
-   touch(x,y,k){if(k!=='down')return;for(const o of this.c)if(Math.abs(x-o.x)<o.w*.6&&Math.abs(y-o.y)<o.h*.9){o.on=!o.on;o.sq=1;o.v+=((o.on?1:0)-o.v)*.3;Sound.play('wood',o.on?1:.8,.5);return}}}}},
- squish:{name:'Squish',desc:'Press and stretch a soft blob',sound:'water',soundName:'Gentle water',pal:'warm',scale:1.5,fidget:true,ownMark:true,
-  /* The edge follows each finger at once (springy, like jelly) and wobbles gently back when let go; a soft dent shows under each finger */
-  make(){return{n:72,r:null,vr:null,pp:new Map(),ls:0,init(){if(!this.r){this.r=new Float32Array(this.n).fill(1);this.vr=new Float32Array(this.n)}},
-   frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,P.c[0],.4));ctx.fillRect(0,0,w,h);const cx=w/2,cy=h/2,R=Math.min(w,h)*.3,n=this.n,ps=[...this.pp.values()].filter(p=>p.on),held=ps.length>0;
-    const pa=ps.map(p=>[Math.atan2(p.y-cy,p.x-cx),clamp(Math.hypot(p.x-cx,p.y-cy)/R,.55,1.35)]),K=held?320:120,D=held?34:12,st=Math.min(rdt,.033);
-    for(let i=0;i<n;i++){const an=i/n*TAU;let tg=1+.025*AMP*Math.sin(3*an+t*.4);for(const [a,pd] of pa){let d=Math.abs(an-a);d=Math.min(d,TAU-d);const f=Math.exp(-d*d/.18);tg=tg*(1-f)+pd*f}
-     this.vr[i]+=(K*(tg-this.r[i])-D*this.vr[i])*st;this.vr[i]=clamp(this.vr[i],-3,3);this.r[i]+=this.vr[i]*st}
-    const c=P.c[1],lc=mix(c,[235,228,220],.3),g=ctx.createRadialGradient(cx-R*.3,cy-R*.35,R*.1,cx,cy,R*1.2);g.addColorStop(0,rgb(lc));g.addColorStop(1,rgb(mix(c,P.bg,.3)));
-    {let mr=0;for(let i=0;i<n;i++)mr+=this.r[i];mr/=n;const sy=cy+R*mr*.98,sg=ctx.createRadialGradient(cx,sy,0,cx,sy,R*mr*1.05);sg.addColorStop(0,'rgba(0,0,0,.32)');sg.addColorStop(1,'rgba(0,0,0,0)');ctx.save();ctx.translate(cx,sy);ctx.scale(1,.22);ctx.translate(-cx,-sy);ctx.fillStyle=sg;ctx.beginPath();ctx.arc(cx,sy,R*mr*1.05,0,TAU);ctx.fill();ctx.restore()}
-    const path=()=>{ctx.beginPath();for(let i=0;i<=n;i++){const j=i%n,an=j/n*TAU,rr=R*this.r[j];const x=cx+Math.cos(an)*rr,y=cy+Math.sin(an)*rr;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath()};
-    ctx.fillStyle=g;path();ctx.fill();
-    ctx.save();path();ctx.clip();{const rg=ctx.createRadialGradient(cx-R*.12,cy-R*.15,R*.6,cx,cy,R*1.35);rg.addColorStop(0,'rgba(0,0,0,0)');rg.addColorStop(1,rgb(mix(c,[20,10,10],.6),.55));ctx.fillStyle=rg;ctx.fillRect(cx-R*1.6,cy-R*1.6,R*3.2,R*3.2)} /* darker towards the rim: looks round and squashy */
-     {const ia=Math.round(n*.625)%n,hr=R*this.r[ia],hx=cx-hr*.42,hy=cy-hr*.46,hg=ctx.createRadialGradient(hx,hy,0,hx,hy,hr*.42);hg.addColorStop(0,'rgba(232,228,224,.5)');hg.addColorStop(.5,'rgba(232,228,224,.16)');hg.addColorStop(1,'rgba(232,228,224,0)');ctx.fillStyle=hg;ctx.save();ctx.translate(hx,hy);ctx.rotate(-.6);ctx.scale(1,.6);ctx.translate(-hx,-hy);ctx.beginPath();ctx.arc(hx,hy,hr*.42,0,TAU);ctx.fill();ctx.restore()}
-     {const bx=cx+R*.3,by=cy+R*.42,bg2=ctx.createRadialGradient(bx,by,0,bx,by,R*.35);bg2.addColorStop(0,rgb(mix(c,P.c[2],.5),.25));bg2.addColorStop(1,rgb(c,0));ctx.fillStyle=bg2;ctx.beginPath();ctx.arc(bx,by,R*.35,0,TAU);ctx.fill()}ctx.restore(); /* soft bounce light from below */
-    for(const [id,p] of this.pp){p.a=p.on?Math.min(1,p.a+rdt/.15):p.a*Math.exp(-rdt/.4);if(!p.on&&p.a<.02){this.pp.delete(id);continue}
-     const dg=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,R*.35);dg.addColorStop(0,rgb(mix(c,[30,20,20],.55),.4*p.a));dg.addColorStop(1,rgb(c,0));ctx.fillStyle=dg;ctx.beginPath();ctx.arc(p.x,p.y,R*.35,0,TAU);ctx.fill()}},
-   touch(x,y,k,now,id){if(k==='down'){const o=this.pp.get(id);this.pp.set(id,{x,y,on:true,a:o?o.a:0,lx:x,ly:y});Sound.play('squelch',1,.45);return}const p=this.pp.get(id);if(!p)return;
+ spinner:{name:'Spinner',desc:'Flick or drag to spin. It glides on and slows by itself',sound:'brown',soundName:'Brown noise',pal:'blues',scale:1.5,fidget:true,
+  /* Deploy 3: a premium fidget spinner.
+     Feel: grab it and it follows the finger at once; flick it and it keeps the speed of the flick (up to about 5 turns a second), then glides on a smooth bearing
+     and slows by itself over about a minute. Grabbing a fast spinner brakes it softly under the finger.
+     Look: glossy body, chrome bearings with coloured inserts, a fixed centre cap. As it speeds up the lobes smear into a motion blur that grows smoothly,
+     then blend into an evenly averaged disc, so it never strobes or shows wagon-wheel flicker. Thin trails at the tips join into a calm ring.
+     The colours flow slowly through the palette as it turns. Three designs (button at the bottom right).
+     Sound: a real bearing whirr whose pitch and level follow the speed, and a soft music-box note as each full turn passes (sparser when fast). */
+  make(){const SPD=[
+    {name:'Classic',n:3,d:.62,lr:.38,hub:.42,wr:.235,body:1,wc:()=>2,groove:.3},
+    {name:'Prism',n:3,d:.62,lr:.38,hub:.42,wr:.235,body:-1,wc:i=>[0,2,3][i],dots:{n:6,r:.3,s:.05,c:j=>j%2?3:0}},
+    {name:'Flower',n:5,d:.64,lr:.28,hub:.5,wr:.17,body:4,wc:i=>i%2?1:2,dots:{n:10,r:.405,s:.03,c:()=>0}}];
+   const NOTES=[1,9/8,5/4,3/2,5/3,2,9/4];
+   let ds=0;try{ds=(+localStorage.getItem('calmspace.spinDesign')||0)%3}catch(e){}
+   return{SPD,KB:[1.7,1.3],a:0,w:0,wv:0,sps:0,ld:0,kb:0,kh:0,u:0,gl:0,dr:null,bp:null,tn:0,lc:-1e9,deg:2,ds,dsP:-1,dsF:1,dsT:-1e9,cache:{},R:0,bt:null,lay:null,
+   init(w,h){this.R=Math.min(w,h)*.31;this.cache={}},
+   col(P,i){const u=this.u,k=Math.floor(u),f=sm(u-k);return mix(P.c[((i+k)%5+5)%5],P.c[((i+k+1)%5+5)%5],f)},
+   bodyC(P,D){return D.body<0?mix(mix(P.bg,[0,0,0],.3),this.col(P,1),.3):this.col(P,D.body)},
+   /* paint one design, centred at 0,0, radius Rp pixels */
+   paint(x,D,Rp,P){const n=D.n,TA=TAU/n,lob=[],bc=this.bodyC(P,D),C=i=>this.col(P,i);for(let i=0;i<n;i++)lob.push([Math.cos(i*TA)*D.d*Rp,Math.sin(i*TA)*D.d*Rp]);
+    const uni=()=>{x.beginPath();x.arc(0,0,D.hub*Rp,0,TAU);for(const [lx,ly] of lob){x.moveTo(lx+D.lr*Rp,ly);x.arc(lx,ly,D.lr*Rp,0,TAU)}};
+    x.lineWidth=Rp*.045;x.strokeStyle=rgb(mix(bc,[0,0,0],.6));uni();x.stroke();
+    const tip=D.d+D.lr,g=x.createRadialGradient(0,0,Rp*.08,0,0,Rp*tip);g.addColorStop(0,rgb(mix(bc,[0,0,0],.15)));g.addColorStop(.5,rgb(bc));g.addColorStop(.82,rgb(mix(bc,[226,226,232],.08)));g.addColorStop(1,rgb(mix(bc,[0,0,0],.32)));
+    x.fillStyle=g;uni();x.fill();
+    if(D.groove){x.strokeStyle=rgb(mix(bc,[0,0,0],.4),.6);x.lineWidth=Rp*.014;x.beginPath();x.arc(0,0,D.groove*Rp,0,TAU);x.stroke()}
+    if(D.dots)for(let j=0;j<D.dots.n;j++){const an=(j+.5)*TAU/D.dots.n,px=Math.cos(an)*D.dots.r*Rp,py=Math.sin(an)*D.dots.r*Rp,c=C(D.dots.c(j)),s=D.dots.s*Rp,dg=x.createRadialGradient(px-s*.3,py-s*.3,0,px,py,s);
+     dg.addColorStop(0,rgb(mix(c,[230,230,236],.25)));dg.addColorStop(1,rgb(mix(c,[0,0,0],.2)));x.fillStyle=dg;x.beginPath();x.arc(px,py,s,0,TAU);x.fill()}
+    for(let i=0;i<n;i++){const [lx,ly]=lob[i],c=C(D.wc(i)),wr=D.wr*Rp;
+     x.fillStyle=rgb(mix(bc,[0,0,0],.55));x.beginPath();x.arc(lx,ly,wr*1.14,0,TAU);x.fill();
+     const cg=x.createLinearGradient(lx-wr,ly-wr,lx+wr,ly+wr);cg.addColorStop(0,'rgb(184,188,198)');cg.addColorStop(.38,'rgb(118,124,136)');cg.addColorStop(.62,'rgb(172,176,188)');cg.addColorStop(1,'rgb(88,94,108)');
+     x.fillStyle=cg;x.beginPath();x.arc(lx,ly,wr,0,TAU);x.fill();
+     x.fillStyle='rgba(30,34,44,.55)';for(let b=0;b<8;b++){const ba=b*TAU/8;x.beginPath();x.arc(lx+Math.cos(ba)*wr*.87,ly+Math.sin(ba)*wr*.87,wr*.055,0,TAU);x.fill()}
+     const ig=x.createRadialGradient(lx-wr*.25,ly-wr*.3,wr*.04,lx,ly,wr*.74);ig.addColorStop(0,rgb(mix(c,[232,232,238],.32)));ig.addColorStop(.55,rgb(c));ig.addColorStop(1,rgb(mix(c,[0,0,0],.32)));
+     x.fillStyle=ig;x.beginPath();x.arc(lx,ly,wr*.74,0,TAU);x.fill();
+     x.strokeStyle='rgba(0,0,0,.22)';x.lineWidth=Math.max(1,wr*.06);x.beginPath();x.arc(lx,ly,wr*.42,0,TAU);x.stroke()}},
+   key(P,D){const q=c=>((c[0]/6)|0)+','+((c[1]/6)|0)+','+((c[2]/6)|0);return Math.round(this.u*24)+'|'+P.c.map(q).join('|')+'|'+q(P.bg)},
+   /* cached sprite (sharp) and radial profile (for the averaged disc) for design k */
+   get(P,k,sc,needSprite){const D=this.SPD[k],R=this.R,kk=this.key(P,D)+'|'+Math.round(R*sc);let E=this.cache[k];
+    if(!E||E.key!==kk){E=this.cache[k]={key:kk,spr:null,prof:null,ok:false}}
+    if(needSprite&&!E.spr){const sz=Math.ceil(2*R*sc*1.05)+4,cv=E.sprC||document.createElement('canvas');cv.width=cv.height=sz;const x=cv.getContext('2d');x.translate(sz/2,sz/2);this.paint(x,D,R*sc,P);E.spr=cv;
+     const sh=document.createElement('canvas');sh.width=sh.height=sz;const y=sh.getContext('2d'),Rp=R*sc;y.translate(sz/2,sz/2);y.shadowColor='rgba(0,0,0,.6)';y.shadowBlur=Rp*.07;y.shadowOffsetX=sz*3;y.beginPath();y.arc(-sz*3,0,D.hub*Rp,0,TAU);for(let i=0;i<D.n;i++){const an=i*TAU/D.n,lx=Math.cos(an)*D.d*Rp-sz*3,ly=Math.sin(an)*D.d*Rp;y.moveTo(lx+D.lr*Rp,ly);y.arc(lx,ly,D.lr*Rp,0,TAU)}y.fillStyle='#000';y.fill();E.sh=sh}
+    if(!E.prof){const N=96,cv=this.pc||(this.pc=document.createElement('canvas'));cv.width=cv.height=N;const x=cv.getContext('2d',{willReadFrequently:true});x.clearRect(0,0,N,N);x.save();x.translate(N/2,N/2);this.paint(x,D,N/2/1.04,P);x.restore();
+     const im=x.getImageData(0,0,N,N).data,NB=36,acc=new Float32Array(NB*5);
+     for(let yy=0;yy<N;yy++)for(let xx=0;xx<N;xx++){const r=Math.hypot(xx+.5-N/2,yy+.5-N/2)/(N/2),b=Math.floor(r*NB);if(b>=NB)continue;const o=(yy*N+xx)*4,al=im[o+3]/255;acc[b*5]+=im[o]*al;acc[b*5+1]+=im[o+1]*al;acc[b*5+2]+=im[o+2]*al;acc[b*5+3]+=al;acc[b*5+4]++}
+     E.prof=[];for(let b=0;b<NB;b++){const a=acc[b*5+3],cn=acc[b*5+4]||1;E.prof.push(a>.001?[acc[b*5]/a,acc[b*5+1]/a,acc[b*5+2]/a,a/cn]:[0,0,0,0])}}
+    return E},
+   next(now){if(now-this.dsT<1200)return;this.dsT=now;this.dsP=this.ds;this.ds=(this.ds+1)%3;this.dsF=0;try{localStorage.setItem('calmspace.spinDesign',this.ds)}catch(e){}
+    Sound.play('chime',1.5,.13)},
+   frame(ctx,w,h,dt,t,P,rdt){const cx=w/2,cy=h/2,R=this.R||(this.R=Math.min(w,h)*.31),now=performance.now(),AM=(prefs.gentler?.6:1)*(RM.matches?.7:1);
+    /* physics */
+    const a0=this.a,d=this.dr;
+    if(d){if(d.lock){this.a=d.a0+d.au;this.w=0}
+     else{this.w*=Math.exp(-rdt/.16);this.a+=this.w*rdt;if(Math.abs(this.w)<1.5){d.lock=true;d.a0=this.a-d.au}}}
+    else if(this.w){const s=Math.sign(this.w),m=Math.max(0,Math.abs(this.w)-(.055+.034*Math.abs(this.w))*rdt);this.w=m<.015?0:s*m;this.a+=this.w*rdt}
+    const v=rdt>0?(this.a-a0)/rdt:0;this.wv+=(v-this.wv)*(1-Math.exp(-rdt/.05));
+    const spd=Math.abs(this.wv);this.sps=spd>this.sps?spd:this.sps+(spd-this.sps)*(1-Math.exp(-rdt/.3));
+    if(this.a>1e4||this.a<-1e4){const k=Math.round(this.a/TAU)*TAU;this.a-=k;if(d)d.a0-=k;this.tn=Math.floor(this.a/TAU)}
+    /* blur blend: the averaged disc takes over between 1.2 and 2 rad/s and is held for a moment so the lobes don't flicker back and forth */
+    const kt=sm((this.sps-this.KB[0])/this.KB[1]);if(kt>=this.kb){this.kb=kt;this.kh=.4}else if(this.kh>0)this.kh-=rdt;else this.kb=Math.max(kt,this.kb-rdt/1.5);
+    const kb=this.kb;
+    /* colours flow with the turning (one palette step per ~20 turns); background glow follows speed slowly */
+    this.u+=spd*rdt/(TAU*20);if(this.u>500)this.u-=500;
+    this.gl+=(Math.min(1,this.sps/18)-this.gl)*(1-Math.exp(-rdt/2.5));
+    if(this.dsF<1)this.dsF=Math.min(1,this.dsF+rdt/.6);
+    /* sound: whirr and a soft note per full turn */
+    if(Sound.whirr)Sound.whirr(spd);
+    const tn=Math.floor(this.a/TAU);if(tn!==this.tn){this.tn=tn;if(spd>.8&&spd<26&&now-this.lc>450+90*spd){this.lc=now;this.deg=clamp(this.deg+[-2,-1,-1,1,1,2][(Math.random()*6)|0],0,NOTES.length-1);
+     Sound.play('chime',NOTES[this.deg],.075+.06*(1-Math.min(1,spd/20)))}}
+    /* draw */
+    const bg=mix(P.bg,P.c[0],.45);ctx.fillStyle=rgb(bg);ctx.fillRect(0,0,w,h);
+    {const gc=this.col(P,1),G=ctx.createRadialGradient(cx,cy,R*.3,cx,cy,Math.max(w,h)*.75);G.addColorStop(0,rgb(gc,(.1+.2*this.gl)*AM+.05));G.addColorStop(1,rgb(gc,0));ctx.fillStyle=G;ctx.fillRect(0,0,w,h)}
+    const scl=ctx.getTransform().a||1;
+    const draw=(k,al)=>{const D=this.SPD[k],tip=D.d+D.lr;ctx.save();ctx.translate(cx,cy);
+          /* tip trails: thin, along the rim; they lengthen with speed and join into an even ring */
+     if(spd>.6&&ctx.createConicGradient){const per=TAU/D.n,Lf=Math.min(1,spd*.16/per),T=sm((Lf-.55)/.45),A=al*AM*.8*sm((spd-.6)/2);
+      ctx.save();ctx.rotate(this.a);if(this.wv<0)ctx.scale(1,-1);const cg=ctx.createConicGradient(0,0,0),p=1/D.n;
+      for(let i=0;i<D.n;i++){const c=this.col(P,D.wc(i)),c2=this.col(P,D.wc((i+1)%D.n));cg.addColorStop(i*p,rgb(c,A));if(Lf<1){cg.addColorStop(i*p+.004,rgb(c,0));cg.addColorStop((i+1)*p-Lf*p,rgb(c2,A*T))}cg.addColorStop((i+1)*p-.0001,rgb(c2,A))}
+      ctx.strokeStyle=cg;ctx.lineWidth=R*.04;ctx.beginPath();ctx.arc(0,0,R*(tip+.03),0,TAU);ctx.stroke();ctx.restore()}
+     const E=this.get(P,k,scl,kb<.999);
+     /* soft drop shadow: the spinner's own shape when still, an even soft disc when spinning */
+     if(kb<.999){const z=E.sh.width/scl;ctx.save();ctx.translate(R*.06,R*.12);ctx.rotate(this.a);ctx.globalAlpha=al*(1-kb)*.8;ctx.drawImage(E.sh,-z/2,-z/2,z,z);ctx.restore()}
+     if(kb>.001){const pr=E.prof,NB=pr.length,G=ctx.createRadialGradient(R*.06,R*.12,0,R*.06,R*.12,R*1.1);for(let b=0;b<NB;b++)G.addColorStop((b+.5)/NB*1.04/1.1,'rgba(0,0,0,'+(pr[b][3]*.45).toFixed(3)+')');G.addColorStop(1,'rgba(0,0,0,0)');ctx.globalAlpha=al*kb;ctx.fillStyle=G;ctx.fillRect(-R*1.2,-R*1.2,R*2.5,R*2.5)}
+     if(kb>.001){const pr=E.prof,NB=pr.length,G=ctx.createRadialGradient(0,0,0,0,0,R*1.04);for(let b=0;b<NB;b++){const q=pr[b];G.addColorStop((b+.5)/NB,rgb(q,q[3]))}G.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.globalAlpha=al*kb;ctx.fillStyle=G;ctx.beginPath();ctx.arc(0,0,R*1.04,0,TAU);ctx.fill();
+      /* brushed-metal sheen of a spinning disc: two soft radial streaks, fixed to the light */
+      ctx.save();ctx.beginPath();ctx.arc(0,0,R*tip*.97,0,TAU);ctx.clip();ctx.rotate(-2.3);ctx.scale(1,.16);const sh=ctx.createRadialGradient(0,0,R*.15,0,0,R*tip);sh.addColorStop(0,'rgba(236,232,226,.0)');sh.addColorStop(.45,'rgba(236,232,226,.13)');sh.addColorStop(1,'rgba(236,232,226,0)');
+      ctx.globalAlpha=al*kb*(.5+.5*sm((spd-2)/10));ctx.fillStyle=sh;ctx.beginPath();ctx.arc(0,0,R*tip,0,TAU);ctx.fill();ctx.restore()}
+     if(kb<.999){const sz=E.spr.width,L=this.lay||(this.lay=document.createElement('canvas'));if(L.width!==sz){L.width=L.height=sz}const x=L.getContext('2d');x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,sz,sz);
+      const spread=Math.min(TAU/D.n*.85,spd*.13),K=spread<.01?1:Math.min(10,Math.ceil(spread/.03)+1),dir=this.wv<0?-1:1;
+      for(let i=0;i<K;i++){const an=this.a-dir*spread*(K>1?i/(K-1):0);x.globalAlpha=1/(i+1);x.setTransform(Math.cos(an),Math.sin(an),-Math.sin(an),Math.cos(an),sz/2,sz/2);x.drawImage(E.spr,-sz/2,-sz/2)}
+      x.globalAlpha=1;x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='source-atop';const s=sz/2,lg=x.createLinearGradient(0,0,sz,sz);lg.addColorStop(0,'rgba(236,232,226,.2)');lg.addColorStop(.5,'rgba(0,0,0,0)');lg.addColorStop(1,'rgba(0,0,12,.3)');x.fillStyle=lg;x.fillRect(0,0,sz,sz);
+      const sp=x.createRadialGradient(s*.62,s*.58,0,s*.62,s*.58,s*.55);sp.addColorStop(0,'rgba(236,232,226,.2)');sp.addColorStop(1,'rgba(236,232,226,0)');x.fillStyle=sp;x.fillRect(0,0,sz,sz);x.globalCompositeOperation='source-over';
+      ctx.globalAlpha=al*(1-kb);ctx.drawImage(L,-sz/2/scl,-sz/2/scl,sz/scl,sz/scl)}
+     ctx.restore()};
+    if(this.dsF<1&&this.dsP>=0)draw(this.dsP,1-sm(this.dsF));draw(this.ds,this.dsF<1?sm(this.dsF):1);
+    /* the centre cap stays still, as on a real spinner (that's where it is held) */
+    {const cr=R*.19,c1=this.col(P,1);ctx.globalAlpha=1;ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.arc(cx+cr*.1,cy+cr*.16,cr*1.04,0,TAU);ctx.fill();
+     const g=ctx.createRadialGradient(cx-cr*.35,cy-cr*.4,cr*.05,cx,cy,cr);g.addColorStop(0,'rgb(196,200,210)');g.addColorStop(.55,'rgb(146,152,166)');g.addColorStop(1,'rgb(80,86,100)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,cr,0,TAU);ctx.fill();
+     const g2=ctx.createRadialGradient(cx-cr*.2,cy-cr*.25,cr*.02,cx,cy,cr*.62);g2.addColorStop(0,rgb(mix(c1,[232,232,238],.3)));g2.addColorStop(.6,rgb(c1));g2.addColorStop(1,rgb(mix(c1,[0,0,0],.35)));ctx.fillStyle=g2;ctx.beginPath();ctx.arc(cx,cy,cr*.62,0,TAU);ctx.fill();
+     ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=Math.max(1,cr*.05);ctx.beginPath();ctx.arc(cx,cy,cr*.62,0,TAU);ctx.stroke()}
+    /* design button: a small round button with the next design on it */
+    {const bx=w-46,by=h-108,br=23,pr=this.bp?1:0;this.bt={x:bx,y:by,r:br};ctx.fillStyle='rgba(8,12,22,.42)';ctx.beginPath();ctx.arc(bx,by,br*(pr?.94:1),0,TAU);ctx.fill();
+     ctx.strokeStyle='rgba(200,206,216,.35)';ctx.lineWidth=1.5;ctx.stroke();const D=this.SPD[(this.ds+1)%3];ctx.save();ctx.translate(bx,by);ctx.rotate(-Math.PI/2+this.a*.05);ctx.fillStyle=rgb(this.col(P,D.body<0?1:D.body));
+     ctx.beginPath();ctx.arc(0,0,D.hub*13,0,TAU);for(let i=0;i<D.n;i++){const an=i*TAU/D.n,lx=Math.cos(an)*D.d*13,ly=Math.sin(an)*D.d*13;ctx.moveTo(lx+D.lr*13,ly);ctx.arc(lx,ly,D.lr*13,0,TAU)}ctx.fill();
+     ctx.fillStyle='rgb(150,156,168)';for(let i=0;i<D.n;i++){const an=i*TAU/D.n;ctx.beginPath();ctx.arc(Math.cos(an)*D.d*13,Math.sin(an)*D.d*13,D.wr*13,0,TAU);ctx.fill()}ctx.restore()}
+   },
+   touch(x,y,k,now,id){const cx=this.cw/2,cy=this.ch/2,R=this.R||Math.min(this.cw,this.ch)*.31,B=this.bt;
+    if(k==='down'){if(B&&Math.hypot(x-B.x,y-B.y)<B.r+12){if(!this.bp)this.bp={id};return}
+     if(this.dr)return;const r=Math.hypot(x-cx,y-cy);this.dr={id,an:Math.atan2(y-cy,x-cx),r,au:0,h:[[now,0]],lock:Math.abs(this.w)<2.5,a0:this.a};if(this.dr.lock)this.w=0;
+     Sound.play('tick',.85+.1*Math.random(),.16);return}
+    if(this.bp&&this.bp.id===id){if(k==='up'){if(B&&Math.hypot(x-B.x,y-B.y)<B.r+16)this.next(now);this.bp=null}return}
+    const d=this.dr;if(!d||d.id!==id)return;
+    const r=Math.hypot(x-cx,y-cy),an=Math.atan2(y-cy,x-cx);let da=an-d.an;if(da>Math.PI)da-=TAU;if(da<-Math.PI)da+=TAU;
+    da*=Math.min(1,Math.min(r,d.r)/(.4*R)); /* near the centre the angle jumps about, so it counts for less */
+    d.an=an;d.r=r;d.au+=da;d.h.push([now,d.au]);while(d.h.length>2&&now-d.h[0][0]>160)d.h.shift();
+    if(k==='up'){const h=d.h.filter(p=>now-p[0]<=100);let v=0;if(h.length>=2){const p0=h[0],p1=h[h.length-1],tt=(p1[0]-p0[0])/1000;if(tt>.012)v=(p1[1]-p0[1])/tt}
+     const WM=(prefs.gentler||RM.matches)?13:30;v=clamp(v,-WM,WM);
+     if(d.lock)this.w=Math.abs(v)>.3?v:0;else if(Math.abs(v)>Math.abs(this.w))this.w=v;this.dr=null}}
+  }}},
+ switches:{name:'Switches',desc:'Soft switches to flick on and off. Swipe across them to flick a row',sound:'brown',soundName:'Brown noise',pal:'greens',scale:1.25,fidget:true,
+  /* Deploy 3: springy knobs (a little overshoot, like a real rocker), a soft glow under each switch that is on, glossy knobs, and swipe-to-flick.
+     The colour of a track changes more slowly than the knob moves, and swipes flick at most one switch every 280 ms (and the same switch at most every 0.7 s), so even a fast swipe
+     changes only a small part of the screen at a time. The room warms very slowly as more switches are on. */
+  make(){return{c:[],ps:new Map(),lt:0,lit:0,init(w,h){const L=w>=h,cols=L?4:2,rows=L?3:6,cw=w*.8/cols,chh=h*.76/rows,ox=(w-cw*cols)/2,oy=(h-chh*rows)/2,old=this.c;this.c=[];
+    for(let r=0;r<rows;r++)for(let q=0;q<cols;q++){const i=r*cols+q,o=old[i];const sw=Math.min(cw*.7,chh*1.4),sh=Math.min(sw*.46,chh*.6);
+     this.c.push({x:ox+cw*(q+.5),y:oy+chh*(r+.5),w:sw,h:sh,on:o?o.on:false,v:o?o.v:0,vv:0,cv:o?o.cv:0,sq:0,pr:0,ci:(q+r)%5,i})}},
+   hit(x,y){for(const o of this.c)if(Math.abs(x-o.x)<o.w*.6&&Math.abs(y-o.y)<o.h*.9)return o;return null},
+   flip(o,now){o.on=!o.on;o.sq=1;o.vv+=(o.on?1:-1)*7;this.lt=now;o.ft=now;Sound.play('wood',o.on?1:.8,.5);
+    if(o.on)Sound.play('note',[1,9/8,5/4,3/2,5/3,2][o.i%6]*(o.i>=6?1:1.5)*.5,.07)},
+   frame(ctx,w,h,dt,t,P,rdt){const st=Math.min(rdt,.033),n=this.c.length;let on=0;for(const o of this.c)on+=o.on?1:0;this.lit+=(on/Math.max(1,n)-this.lit)*(1-Math.exp(-rdt/2.5));
+    ctx.fillStyle=rgb(mix(P.bg,P.c[0],.33+.14*this.lit));ctx.fillRect(0,0,w,h);
+    {const g=ctx.createRadialGradient(w/2,h*.45,0,w/2,h*.45,Math.max(w,h)*.7);g.addColorStop(0,rgb(mix(P.c[1],P.bg,.5),.16+.12*this.lit));g.addColorStop(1,rgb(P.bg,0));ctx.fillStyle=g;ctx.fillRect(0,0,w,h)}
+    const kc2=1-Math.exp(-rdt/.15),ks=Math.exp(-rdt/.12),kp=Math.exp(-rdt/.18);
+    const pill=(x,y,w,h,r)=>{ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,w,h,r);else ctx.rect(x,y,w,h)};
+    for(const o of this.c){for(let s=0;s<2;s++){o.vv+=(((o.on?1:0)-o.v)*620-o.vv*30)*st/2;o.v+=o.vv*st/2}o.v=clamp(o.v,-.09,1.09);o.cv+=((o.on?1:0)-o.cv)*kc2;o.sq*=ks;o.pr*=kp;
+     const cc=P.c[o.ci],tr=mix([34,38,48],cc,o.cv),x0=o.x-o.w/2,y0=o.y-o.h/2,rr=o.h/2;
+     if(o.cv>.02){const gr=o.w*.62,g=ctx.createRadialGradient(o.x,o.y,o.h*.3,o.x,o.y,gr);g.addColorStop(0,rgb(cc,.30*o.cv));g.addColorStop(1,rgb(cc,0));ctx.fillStyle=g;ctx.fillRect(o.x-gr,o.y-gr,gr*2,gr*2)} /* soft glow under a switch that is on */
+     ctx.fillStyle=rgb(mix(P.bg,[0,0,0],.3),.6);pill(x0-3,y0-3,o.w+6,o.h+7,rr+3);ctx.fill(); /* recess */
+     {const g=ctx.createLinearGradient(0,y0,0,y0+o.h);g.addColorStop(0,rgb(mix(tr,[0,0,0],.38)));g.addColorStop(.5,rgb(tr));g.addColorStop(1,rgb(mix(tr,[220,224,232],.12)));ctx.fillStyle=g;pill(x0,y0,o.w,o.h,rr);ctx.fill()}
+     {ctx.save();pill(x0,y0,o.w,o.h,rr);ctx.clip();const g=ctx.createLinearGradient(0,y0,0,y0+o.h*.45);g.addColorStop(0,'rgba(0,0,0,.32)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(x0,y0,o.w,o.h*.45); /* inner shadow at the top of the track */
+      const sx=x0+rr+(o.w-2*rr)*.5,sg=ctx.createRadialGradient(sx,y0+o.h*.85,0,sx,y0+o.h*.85,o.w*.5);sg.addColorStop(0,rgb(mix(cc,[230,232,236],.35),.22*o.cv));sg.addColorStop(1,rgb(cc,0));ctx.fillStyle=sg;ctx.fillRect(x0,y0,o.w,o.h);ctx.restore()}
+     {const dx=x0+rr*.95,lr=rr*.3,lg=ctx.createRadialGradient(dx,o.y,0,dx,o.y,lr*1.8);lg.addColorStop(0,rgb(mix(cc,[232,234,238],.45),.9*o.cv));lg.addColorStop(.45,rgb(cc,.5*o.cv));lg.addColorStop(1,rgb(cc,0));ctx.fillStyle=lg;ctx.beginPath();ctx.arc(dx,o.y,lr*1.8,0,TAU);ctx.fill()} /* little light, glowing when on */
+     const kx=x0+rr+(o.w-2*rr)*o.v,kr=rr*(.8+.08*o.sq-.05*o.pr),ky=o.y,kc=mix([206,211,220],cc,.12+.1*o.cv);
+     {const g=ctx.createRadialGradient(kx+kr*.1,ky+kr*.3,kr*.4,kx+kr*.1,ky+kr*.3,kr*1.3);g.addColorStop(0,'rgba(0,0,0,.38)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(kx+kr*.1,ky+kr*.3,kr*1.3,0,TAU);ctx.fill()} /* soft knob shadow */
+     {const g=ctx.createRadialGradient(kx-kr*.35,ky-kr*.42,kr*.06,kx,ky,kr);g.addColorStop(0,rgb(mix(kc,[236,236,240],.3)));g.addColorStop(.62,rgb(kc));g.addColorStop(1,rgb(mix(kc,[56,60,70],.45)));ctx.fillStyle=g;ctx.beginPath();ctx.arc(kx,ky,kr,0,TAU);ctx.fill()}
+     ctx.strokeStyle=rgb(mix(kc,[70,74,84],.6),.5);ctx.lineWidth=Math.max(1,kr*.05);ctx.beginPath();ctx.arc(kx,ky,kr*.98,0,TAU);ctx.stroke();
+     {const g=ctx.createRadialGradient(kx,ky,0,kx,ky,kr*.55);g.addColorStop(0,rgb(mix(kc,[60,64,74],.25)));g.addColorStop(.8,rgb(mix(kc,[150,154,164],.2)));g.addColorStop(1,rgb(mix(kc,[90,94,104],.4)));ctx.fillStyle=g;ctx.beginPath();ctx.arc(kx,ky,kr*.55,0,TAU);ctx.fill()} /* dished centre */
+     {const hx=kx-kr*.38,hy=ky-kr*.48,g=ctx.createRadialGradient(hx,hy,0,hx,hy,kr*.34);g.addColorStop(0,'rgba(236,238,242,.55)');g.addColorStop(1,'rgba(236,238,242,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(hx,hy,kr*.34,0,TAU);ctx.fill()} /* gloss */
+     if(o.cv>.02){ctx.fillStyle=rgb(mix(cc,[230,232,236],.25),.75*o.cv);ctx.beginPath();ctx.arc(kx,ky,kr*.12,0,TAU);ctx.fill()}}}, /* a coloured dot on the knob when on */
+   touch(x,y,k,now,id){if(k==='down'){const o=this.hit(x,y);this.ps.set(id,{i:o?o.i:-1});if(o){o.pr=1;this.flip(o,now)}return}
+    const p=this.ps.get(id);if(!p)return;if(k==='up'){this.ps.delete(id);return}
+    const o=this.hit(x,y);if(o&&o.i!==p.i&&now-this.lt>280&&now-(o.ft||-1e9)>700){p.i=o.i;o.pr=1;this.flip(o,now)}else if(!o)p.i=-1}}}},
+ squish:{name:'Squish',desc:'Press, squeeze and stretch a soft jelly blob',sound:'water',soundName:'Gentle water',pal:'warm',scale:1.5,fidget:true,ownMark:true,
+  /* Deploy 3: a glossy jelly. The edge follows each finger at once and wobbles back when let go; it keeps its volume, so pressing one side
+     bulges the others. Little glossy beads float inside and move with the squash. A soft dent shows under each finger; the colour drifts slowly. */
+  make(){return{n:84,r:null,vr:null,f:null,pp:new Map(),ls:0,bd:null,init(){if(!this.r){this.r=new Float32Array(this.n).fill(1);this.vr=new Float32Array(this.n);this.f=new Float32Array(this.n);
+     this.bd=[];for(let i=0;i<16;i++){const a=Math.random()*TAU,q=Math.sqrt(Math.random())*.72;this.bd.push({a,q,ph:Math.random()*TAU,s:.035+Math.random()*.045,ci:i%5,x:0,y:0,ok:false})}}},
+   rad(an){const n=this.n,u=((an%TAU)+TAU)%TAU/TAU*n,i=Math.floor(u)%n,fr=u-Math.floor(u);return this.r[i]*(1-fr)+this.r[(i+1)%n]*fr},
+   frame(ctx,w,h,dt,t,P,rdt){const cx=w/2,cy=h/2,R=Math.min(w,h)*.3,n=this.n,ps=[...this.pp.values()].filter(p=>p.on),held=ps.length>0;
+    const ph=(Math.sin(t*.045)+1)/2,c=mix(P.c[1],P.c[3],ph*.6),c2=mix(P.c[2],P.c[4],ph);
+    ctx.fillStyle=rgb(mix(P.bg,P.c[0],.4));ctx.fillRect(0,0,w,h);
+    {const g=ctx.createRadialGradient(cx,cy,R*.5,cx,cy,Math.max(w,h)*.75);g.addColorStop(0,rgb(mix(c,P.bg,.55),.35));g.addColorStop(1,rgb(P.bg,0));ctx.fillStyle=g;ctx.fillRect(0,0,w,h)} /* the blob's colour glows softly into the room */
+    const pa=ps.map(p=>[Math.atan2(p.y-cy,p.x-cx),clamp(Math.hypot(p.x-cx,p.y-cy)/R,.5,1.4)]),K=held?340:130,D=held?32:11,st=Math.min(rdt,.033),tg=new Float32Array(n);let a2=0,wf=0,sum2=0;
+    for(let i=0;i<n;i++){const an=i/n*TAU;let v=1+.025*AMP*Math.sin(3*an+t*.4),ff=0;for(const [a,pd] of pa){let d=Math.abs(an-a);d=Math.min(d,TAU-d);const f=Math.exp(-d*d/.16);v=v*(1-f)+pd*f;ff=Math.max(ff,f)}
+     tg[i]=v;this.f[i]=ff;sum2+=v*v;a2+=(1-ff)*v*v;wf+=1-ff}
+    if(held&&a2>0){const need=n-(sum2-a2),s=Math.sqrt(clamp(need/a2,.55,1.8));for(let i=0;i<n;i++)tg[i]*=1+(s-1)*(1-this.f[i])*.8} /* keep the volume: the free edge bulges when pressed in, and draws in when stretched */
+    for(let i=0;i<n;i++){this.vr[i]+=(K*(tg[i]-this.r[i])-D*this.vr[i])*st;this.vr[i]=clamp(this.vr[i],-3,3);this.r[i]+=this.vr[i]*st}
+    let mr=0;for(let i=0;i<n;i++)mr+=this.r[i];mr/=n;
+    {const sy=cy+R*mr*.98,sg=ctx.createRadialGradient(cx,sy,0,cx,sy,R*mr*1.1);sg.addColorStop(0,'rgba(0,0,0,.34)');sg.addColorStop(1,'rgba(0,0,0,0)');ctx.save();ctx.translate(cx,sy);ctx.scale(1,.24);ctx.translate(-cx,-sy);ctx.fillStyle=sg;ctx.beginPath();ctx.arc(cx,sy,R*mr*1.1,0,TAU);ctx.fill();ctx.restore()}
+    const path=()=>{ctx.beginPath();const pt=j=>{const an=j/n*TAU,rr=R*this.r[j];return[cx+Math.cos(an)*rr,cy+Math.sin(an)*rr]};let a=pt(n-1),b=pt(0);ctx.moveTo((a[0]+b[0])/2,(a[1]+b[1])/2);
+     for(let i=0;i<n;i++){const p=pt(i),q=pt((i+1)%n);ctx.quadraticCurveTo(p[0],p[1],(p[0]+q[0])/2,(p[1]+q[1])/2)}ctx.closePath()}; /* smooth curved edge */
+    {const g=ctx.createRadialGradient(cx-R*.28,cy-R*.32,R*.08,cx,cy,R*1.25);g.addColorStop(0,rgb(mix(c,[236,228,222],.32)));g.addColorStop(.55,rgb(c));g.addColorStop(1,rgb(mix(c,P.bg,.35)));ctx.fillStyle=g;path();ctx.fill()}
+    ctx.save();path();ctx.clip();
+     {const rg=ctx.createRadialGradient(cx-R*.12,cy-R*.15,R*.55,cx,cy,R*1.4);rg.addColorStop(0,'rgba(0,0,0,0)');rg.addColorStop(1,rgb(mix(c,[24,10,12],.62),.6));ctx.fillStyle=rg;ctx.fillRect(cx-R*1.7,cy-R*1.7,R*3.4,R*3.4)} /* darker towards the rim: round and squashy */
+     {const bx=cx+R*.22,by=cy+R*.3,g=ctx.createRadialGradient(bx,by,0,bx,by,R*.7);g.addColorStop(0,rgb(mix(c2,[236,230,224],.2),.34));g.addColorStop(1,rgb(c2,0));ctx.fillStyle=g;ctx.fillRect(cx-R*1.7,cy-R*1.7,R*3.4,R*3.4)} /* light glowing through the jelly from below */
+     for(const b of this.bd){const an=b.a+.08*Math.sin(t*.13+b.ph),q=b.q+.04*Math.sin(t*.21+b.ph*2),rr=R*this.rad(an)*q,tx=cx+Math.cos(an)*rr,ty=cy+Math.sin(an)*rr;
+      if(!b.ok){b.x=tx;b.y=ty;b.ok=true}const kb=1-Math.exp(-rdt/.12);b.x+=(tx-b.x)*kb;b.y+=(ty-b.y)*kb; /* beads lag a little behind the squash, like things suspended in jelly */
+      const s=R*b.s,bc=mix(P.c[b.ci],c,.25),g=ctx.createRadialGradient(b.x-s*.35,b.y-s*.4,s*.05,b.x,b.y,s);g.addColorStop(0,rgb(mix(bc,[236,234,232],.4),.9));g.addColorStop(.7,rgb(bc,.75));g.addColorStop(1,rgb(mix(bc,[20,10,10],.4),.5));ctx.fillStyle=g;ctx.beginPath();ctx.arc(b.x,b.y,s,0,TAU);ctx.fill()}
+     {const ia=Math.round(n*.625)%n,hr=R*this.r[ia],hx=cx-hr*.42,hy=cy-hr*.46,hg=ctx.createRadialGradient(hx,hy,0,hx,hy,hr*.44);hg.addColorStop(0,'rgba(234,230,226,.5)');hg.addColorStop(.5,'rgba(234,230,226,.15)');hg.addColorStop(1,'rgba(234,230,226,0)');ctx.fillStyle=hg;ctx.save();ctx.translate(hx,hy);ctx.rotate(-.6);ctx.scale(1,.58);ctx.translate(-hx,-hy);ctx.beginPath();ctx.arc(hx,hy,hr*.44,0,TAU);ctx.fill();ctx.restore()
+      const sx=cx-hr*.55,sy=cy-hr*.58,sr=hr*.07,sg=ctx.createRadialGradient(sx,sy,0,sx,sy,sr);sg.addColorStop(0,'rgba(238,236,234,.7)');sg.addColorStop(1,'rgba(238,236,234,0)');ctx.fillStyle=sg;ctx.beginPath();ctx.arc(sx,sy,sr,0,TAU);ctx.fill()} /* soft sheen and a small bright glint that ride the deforming top */
+    ctx.restore();
+    ctx.strokeStyle=rgb(mix(c,[236,230,226],.35),.22);ctx.lineWidth=Math.max(1.5,R*.012);path();ctx.stroke(); /* a thin rim light */
+    for(const [id,p] of this.pp){p.a=p.on?Math.min(1,p.a+rdt/.12):p.a*Math.exp(-rdt/.4);if(!p.on&&p.a<.02){this.pp.delete(id);continue}
+     const dg=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,R*.36);dg.addColorStop(0,rgb(mix(c,[30,18,20],.55),.42*p.a));dg.addColorStop(.6,rgb(mix(c,[30,18,20],.4),.15*p.a));dg.addColorStop(1,rgb(c,0));ctx.fillStyle=dg;ctx.beginPath();ctx.arc(p.x,p.y,R*.36,0,TAU);ctx.fill()}},
+   touch(x,y,k,now,id){if(k==='down'){const o=this.pp.get(id);this.pp.set(id,{x,y,on:true,a:o?Math.max(o.a,.35):.35,lx:x,ly:y});Sound.play('squelch',.9+.2*Math.random(),.45);return}const p=this.pp.get(id);if(!p)return;
     if(k==='up'){p.on=false;Sound.play('boing',1,.35);return}p.x=x;p.y=y;if(Math.hypot(x-p.lx,y-p.ly)>40&&now-this.ls>140){this.ls=now;p.lx=x;p.ly=y;const d=Math.hypot(x-this.cw/2,y-this.ch/2)/(Math.min(this.cw,this.ch)*.3);Sound.play('stretch',.8+.4*clamp(d,0,1.4),.3)}}}}},
-
 };
 const ORDER=['wash','bubbles','ripples','stars','lava','buddy'],FORDER=['pop','spinner','switches','squish'];
 
