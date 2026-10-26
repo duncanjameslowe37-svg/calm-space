@@ -334,7 +334,7 @@ input[type=range].stepped{display:none}
 .timerbox .tx small{display:block;font-weight:400;color:var(--muted);font-size:1rem}
 .mixwrap .ch{margin:0 0 18px;padding:14px 18px;border-radius:18px;background:var(--panel);border:2px solid var(--line)}
 .mixwrap .ch .lab{display:flex;justify-content:space-between;font-weight:700;font-size:1.15rem}
-.hushpill{margin-left:auto;min-height:60px;font-size:1rem}
+.hushpill{margin-left:auto;min-height:60px;font-size:1rem}.setpill{min-height:60px;font-size:1rem;gap:6px}#home .brand{position:sticky;top:0;z-index:4;background:var(--bg);padding:8px 0 6px;box-shadow:0 6px 8px -6px rgba(0,0,0,.5)}@media (max-width:400px){.brand{gap:6px}.brand h1{font-size:1.4rem}.brand>svg{width:34px;height:34px}.hushpill,.setpill{padding-left:9px;padding-right:9px;font-size:.95rem;gap:4px}}
 .hushpill[aria-pressed="true"]{background:#2b3440;border-color:#7d9cc0}
 .sounds{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin:0 0 24px}
 .sounds .btn{min-height:96px;flex-direction:column;gap:4px}
@@ -422,6 +422,7 @@ details.ab{border-top:1px solid var(--line);padding:6px 0}details.ab summary{fon
    <svg width="44" height="44" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="22" fill="none" stroke="#7d9cc0" stroke-width="3" opacity=".8"/><circle cx="32" cy="32" r="11" fill="#5d7ea3" opacity=".7"/></svg>
    <h1 id="homeH" tabindex="-1" data-focus>Calm Space</h1>
    <button class="btn hushpill" id="hushBtn" aria-pressed="false"><svg width="28" height="28" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 24h10l12-10v36L20 40H10z" fill="#a7b2bf"/><path d="M42 24l14 16M56 24L42 40" stroke="#a7b2bf" stroke-width="4" stroke-linecap="round"/></svg><span id="hushTxt">Hush</span></button>
+   <button class="btn setpill" id="setTop" aria-label="Settings, for adults"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path fill="#a7b2bf" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg><span>Settings</span></button>
   </div>
   <p class="tagline">A calm space you control.</p>
   <div class="actions">
@@ -489,6 +490,7 @@ details.ab{border-top:1px solid var(--line);padding:6px 0}details.ab summary{fon
   <div class="card" style="margin-bottom:16px">
    <button class="switch" role="switch" id="p_speak" aria-checked="true"><span><b>Speak talk cards aloud</b><br><span class="muted">Uses the device's own voice, softly. Volume is capped.</span></span><span class="knob" aria-hidden="true"></span></button>
    <div class="ctl"><label for="p_svol"><span>Speaking volume</span><span id="v_svol" class="muted"></span></label><input type="range" id="p_svol" min="0" max="1" step="0.05"></div>
+   <div class="ctl"><label for="p_voice"><span>Voice</span></label><select id="p_voice" class="txt" style="width:100%"></select><p class="muted" id="voiceUsing" style="margin:6px 0 0"></p></div>
    <div class="row"><button class="btn" id="testVoice">Test voice</button><span class="muted" id="voiceNote"></span></div>
    <button class="switch" role="switch" id="p_awake" aria-checked="false"><span><b>Keep the screen on during scenes</b><br><span class="muted">Classroom mode always keeps it on.</span></span><span class="knob" aria-hidden="true"></span></button>
   </div>
@@ -1817,7 +1819,7 @@ function refreshHome(){const c=savedCalm();$('#calmNowSub').textContent=c?('Open
 function openCalm(over){const c=savedCalm();if(c)openEffect(c.effect,Object.assign({},c,over||{}),true);else openEffect('wash',over)}
 $('#calmNow').onclick=once(()=>openCalm());
 $('#feelBtn').onclick=once(()=>show('feel'));$('#aboutBtn').onclick=once(()=>show('about'));
-$('#prefsBtn').onclick=()=>Gate.open(()=>{Adult.open();syncPrefs();show('prefs')});
+$('#prefsBtn').onclick=$('#setTop').onclick=()=>VG.run('gate',()=>Gate.open(()=>{Adult.open();syncPrefs();fillVoices();show('prefs')})); /* d5: the gate opening is a visible change, so it waits its turn in the 1.3 s queue */
 
 /* ---------- Scene ---------- */
 const SESS={};
@@ -1905,7 +1907,7 @@ function exitClassroom(){classroom=false;$('#player').classList.remove('classroo
 /* ---------- Adult gate: hold for 3 seconds, then answer a simple sum ---------- */
 const Gate={cb:null,t:0,ht:0,cool:0,ans:0,q:0,shownAt:0,
  isOpen(){return!$('#gate').hidden},
- open(cb,skipHold){if(prefs.gate==='off'){cb&&cb();return}if(Date.now()<this.cool){toast('Please wait a moment, then try again.');return}if(!skipHold&&Gate.isOpen())return;cancelHold();this.cb=cb;$('#gate').hidden=false;this.step(skipHold?2:1);this.arm();setTimeout(()=>$('#gateH').focus({preventScroll:true}),30)},
+ open(cb,skipHold){if(prefs.gate==='off'){cb&&cb();return}if(Date.now()<this.cool){toast('Please wait a moment, then try again.');return}if(!skipHold&&Gate.isOpen())return;cancelHold();this.cb=cb;this.openAt=performance.now();$('#gate').hidden=false;this.step(skipHold?2:1);this.arm();setTimeout(()=>$('#gateH').focus({preventScroll:true}),30)},
  arm(){clearTimeout(this.t);this.t=setTimeout(()=>this.close(),20000)},
  step(n){$('#gate1').hidden=n!==1;$('#gate2').hidden=n!==2;if(n!==2)return;this.q=0;this.ask()},
  ask(){this.q++;this.shownAt=performance.now();
@@ -1921,9 +1923,9 @@ const Gate={cb:null,t:0,ht:0,cool:0,ans:0,q:0,shownAt:0,
 (function(){const h=$('#gateHold');h.addEventListener('pointerdown',e=>{if(e.isPrimary){try{h.setPointerCapture(e.pointerId)}catch(x){}Gate.startHold()}});
  ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>h.addEventListener(ev,()=>Gate.cancelHold()));
  h.addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat){e.preventDefault();Gate.startHold()}});h.addEventListener('keyup',()=>Gate.cancelHold());
- h.addEventListener('click',e=>e.preventDefault());$('#gateCancel').onclick=()=>Gate.close();
- $('#gate').addEventListener('pointerdown',e=>{if(!e.isPrimary)Gate.close();else if(e.target.id==='gate')Gate.close()}); // tapping outside, or a second finger, closes it
- $('#gate').addEventListener('touchstart',e=>{if(e.touches.length>1)Gate.close()},{passive:true})})();
+ h.addEventListener('click',e=>e.preventDefault());const gateSoon=()=>performance.now()-(Gate.openAt||0)<1300; /* d5: a stray tap straight after it opens doesn't snap it shut again */$('#gateCancel').onclick=()=>{if(!gateSoon())Gate.close()};
+ $('#gate').addEventListener('pointerdown',e=>{if(gateSoon())return;if(!e.isPrimary)Gate.close();else if(e.target.id==='gate')Gate.close()}); // tapping outside, or a second finger, closes it
+ $('#gate').addEventListener('touchstart',e=>{if(e.touches.length>1&&!gateSoon())Gate.close()},{passive:true})})();
 
 /* ---------- How I feel ---------- */
 const FEEL=[
@@ -1948,7 +1950,15 @@ $('#p_awake').onclick=()=>{prefs.awake=!prefs.awake;store.set('prefs',prefs);syn
 $('#p_speak').onclick=()=>{prefs.speak=!prefs.speak;store.set('prefs',prefs);syncPrefs()};
 $('#p_svol').oninput=e=>{prefs.speakVol=clamp(+e.target.value,0,1);store.set('prefs',prefs);$('#v_svol').textContent=pct(prefs.speakVol)};
 $('#p_svol').onchange=()=>{};
-$('#testVoice').onclick=()=>{const n=Speak.ok()?speechSynthesis.getVoices().length:0;Speak.say('Hello. This is how talk cards sound.','talk');setTimeout(voiceNote,400)};
+$('#testVoice').onclick=()=>{fillVoices();const n=Speak.ok()?speechSynthesis.getVoices().length:0;Speak.say('Hello. This is how talk cards sound.','talk');setTimeout(voiceNote,400)};
+/* Voice chooser (Preferences): "Automatic" picks the most natural voice on this device; an adult can choose a specific one. Stored in prefs. */
+function fillVoices(){const sel=$('#p_voice');if(!sel||!Speak.ok())return;const r=Speak.ranked(),best=r[0],cur=prefs.voice||'';
+ const nice=v=>{const L=/^en[-_]gb/i.test(v.lang)?'UK':/^en[-_]us/i.test(v.lang)?'US':(v.lang||'').replace(/^en[-_]/i,'').toUpperCase();return v.name.replace(/^(Microsoft|Apple)\s+/,'')+' ('+L+')'+(Speak.score(v)>=50?' - natural':'')+(v.localService?'':' - needs internet')};
+ sel.innerHTML='';const a=document.createElement('option');a.value='';a.textContent='Automatic (most natural)';sel.appendChild(a);
+ r.forEach(v=>{const o=document.createElement('option');o.value=v.voiceURI;o.textContent=nice(v);sel.appendChild(o)});
+ sel.value=cur&&r.some(v=>v.voiceURI===cur)?cur:'';
+ const c=Speak.chosen(),v=Speak.voice(),n=$('#voiceUsing');if(n)n.textContent=!r.length?'':(cur&&!c?'Your chosen voice ('+(prefs.voiceName||'')+') is not on this device right now, so ':'')+(v?(cur&&!c?'u':'U')+'sing: '+nice(v)+'.':'')+(best&&Speak.score(best)<40?' This device only has basic voices. For a more natural one, add an "Enhanced" or "Natural" English voice in the device\'s text-to-speech settings.':'')}
+$('#p_voice').onchange=e=>{const v=Speak.voices().find(x=>x.voiceURI===e.target.value);prefs.voice=v?v.voiceURI:'';prefs.voiceName=v?v.name:'';store.set('prefs',prefs);fillVoices();Speak.say('Hello. This is how talk cards sound.','talk');toast('Saved')};
 function voiceNote(){const n=Speak.ok()?speechSynthesis.getVoices().length:0;$('#voiceNote').textContent=!Speak.ok()||!n?'No voice found on this device, so cards will show but not speak. Check the device\'s text-to-speech settings.':''}
 $('#p_dim').onclick=()=>{prefs.dimCards=!prefs.dimCards;store.set('prefs',prefs);applyLook();syncPrefs()};
 /* Destructive actions: press and hold for 2 seconds (a slim bar fills). Keyboard: press, then press again within 4 s. */
@@ -2027,11 +2037,31 @@ const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 
 /* Speech: one utterance at a time (each new one cancels the last), debounced, gentle rate, volume capped */
 const Speak={t:0,MAXV:1,ok:()=>'speechSynthesis'in window,
- voice(){try{const vs=speechSynthesis.getVoices();return vs.find(v=>v.lang==='en-GB'&&/female|serena|kate|libby|sonia|martha|uk english/i.test(v.name))||vs.find(v=>v.lang==='en-GB')||vs.find(v=>/^en/i.test(v.lang))||null}catch(e){return null}},
+ /* English voices on this device (the list can arrive late, so it is read fresh each time) */
+ voices(){try{return speechSynthesis.getVoices().filter(v=>/^en([-_]|$)/i.test(v.lang||''))}catch(e){return[]}},
+ /* How natural a voice is likely to sound: on-device neural / "Natural" / "Enhanced" / Premium / Siri / Google voices first, UK English
+    preferred; the old novelty and formant voices (eSpeak, Fred, Albert, Zarvox, the Eloquence set ...) last. */
+ score(v){const n=(v.name||'')+' '+(v.voiceURI||'');let s=0;
+  if(/natural|neural|enhanced|premium|wavenet|studio|journey|polyglot/i.test(n))s+=50;
+  if(/siri/i.test(n))s+=45;if(/google/i.test(n))s+=30;if(/-network/i.test(n))s+=20;if(/online/i.test(n))s+=10;
+  if(/^en[-_]gb/i.test(v.lang||''))s+=20;else if(/^en[-_](ie|au|nz)/i.test(v.lang||''))s+=6;
+  if(/serena|kate|libby|sonia|martha|maisie|stephanie|daniel|arthur|ryan|thomas|oliver|hazel|female|uk english/i.test(n))s+=3;
+  if(/compact|espeak|e-speak|mbrola|robot|zarvox|trinoids|whisper|bad news|good news|bells|boing|bubbles|cellos|wobble|jester|organ|superstar|albert|\bfred\b|junior|ralph|kathy|bahh|deranged|hysterical|pipe organ/i.test(n))s-=100;
+  if(/\b(eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley)\b/i.test(n))s-=60;
+  if(v.localService)s+=2;return s},
+ ranked(){return this.voices().map(v=>({v,s:this.score(v)})).sort((a,b)=>b.s-a.s).map(o=>o.v)},
+ /* The adult's own choice (kept in preferences on this device, so it survives updates); if that voice isn't on this device right now,
+    the most natural one available is used instead. */
+ chosen(){const id=prefs.voice;if(!id)return null;const vs=this.voices();return vs.find(v=>v.voiceURI===id)||vs.find(v=>v.name===prefs.voiceName)||null},
+ voice(localOnly){const c=this.chosen();if(c&&(!localOnly||c.localService))return c;const r=this.ranked();return(localOnly?r.find(v=>v.localService):r[0])||null},
  say(text,kind){kind=kind||'talk';if(!prefs.speak||!this.ok()||!text)return;if(kind==='talk'){if(prefs.hush&&prefs.hushTalk)return}else if(prefs.hush||!prefs.infoSpeak)return;/* Hush never silences the user's own talk cards unless an adult chose that */clearTimeout(this.t);try{speechSynthesis.cancel()}catch(e){}
-  this.t=setTimeout(()=>{try{const u=new SpeechSynthesisUtterance(text);u.lang='en-GB';const v=this.voice();if(v)u.voice=v;u.rate=.85;u.pitch=1;u.volume=clamp(+prefs.speakVol||0,0,1)*this.MAXV;speechSynthesis.speak(u)}catch(e){}},280)},
+  const go=(localOnly)=>{try{const u=new SpeechSynthesisUtterance(text);u.lang='en-GB';const v=this.voice(localOnly);if(v){u.voice=v;u.lang=v.lang}u.rate=.85;u.pitch=1;u.volume=clamp(+prefs.speakVol||0,0,1)*this.MAXV;
+   /* an online voice can fail with no internet: say it again with the best voice stored on the device */
+   if(!localOnly&&v&&!v.localService)u.onerror=e=>{if(e&&(e.error==='interrupted'||e.error==='canceled'))return;go(true)};this.last=v?v.name:'';speechSynthesis.speak(u)}catch(e){}};
+  this.t=setTimeout(()=>{if(this.voices().length){go();return}/* the voice list loads late on some devices: wait for it briefly rather than fall back to the basic voice */
+   let done=false;const f=()=>{if(done)return;done=true;try{speechSynthesis.removeEventListener('voiceschanged',f)}catch(e){}go()};try{speechSynthesis.addEventListener('voiceschanged',f)}catch(e){}this.t=setTimeout(f,1500)},280)},
  stop(){clearTimeout(this.t);try{this.ok()&&speechSynthesis.cancel()}catch(e){}}};
-if(Speak.ok()&&speechSynthesis.addEventListener)speechSynthesis.addEventListener('voiceschanged',()=>{});
+if(Speak.ok()){try{speechSynthesis.getVoices()}catch(e){}if(speechSynthesis.addEventListener)speechSynthesis.addEventListener('voiceschanged',()=>{if(typeof fillVoices==='function')fillVoices()})}
 
 /* Big full-screen card: fades in and out over 0.5 s; can't be reopened faster than every 0.6 s, or closed in under 0.8 s */
 /* One app-wide limiter for screen changes, overlays and card swaps: at most one change every 1.5 s, each faded over 0.5 s or less, so no 1-second window can hold more than one change */
@@ -2303,7 +2333,7 @@ const ST={cur:null,i:0,last:0,editing:null,pickFor:-1,dirty:false,
    const go=$('#sGo');if(go)go.remove();if(pg[2]&&FX[pg[2]]){const b=document.createElement('button');b.id='sGo';b.className='btn';b.textContent='Open '+FX[pg[2]].name.toLowerCase();b.onclick=once(()=>openEffect(pg[2]));$('#sPage').appendChild(b)}};
   $('#sH').textContent=s.t;$('#sNum').textContent=(this.i+1)+' / '+s.p.length;$('#sPrev').disabled=this.i===0;$('#sNext').textContent=end?'The end':'Next \u2192';$('#sNext').setAttribute('aria-label',end?'Finish the story':'Next page');
   const el=$('#sPage');clearTimeout(this.ft);if(anim){el.classList.add('fade');this.ft=setTimeout(()=>{put();el.classList.remove('fade')},RM.matches?220:300)}else{el.classList.remove('fade');put()}},
- turn(d){const n=performance.now(),s=this.cur;if(!s||n-this.last<550)return;const j=this.i+d;if(j<0)return;if(j>=s.p.length){this.last=n;Speak.stop&&Speak.stop();show('stories');return}
+ turn(d){const n=performance.now(),s=this.cur;if(!s||n-this.last<550)return;const j=this.i+d;if(j<0)return;if(j>=s.p.length){this.last=n;Speak.stop&&Speak.stop();nav(()=>show('stories'));return}
   this.last=n;this.i=j;Sound.play('page',d>0?1:.92,.32);this.draw(true);if(prefs.speak&&store.get('storyRead',false))setTimeout(()=>this.read(),320)},
  read(){const s=this.cur;if(!s)return;const pg=s.p[this.i];if(pg)Speak.say(pg[1],'talk')},
  /* the feelings panel and the picture picker: one overlay, faces first and all together */
@@ -2316,7 +2346,7 @@ const ST={cur:null,i:0,last:0,editing:null,pickFor:-1,dirty:false,
    VG.run('stfeel',()=>{if(!$('#stOver').classList.contains('show'))return false;this.feel=id;$('#stFaces').querySelectorAll('.fcard').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on?'true':'false')});$('#stFeelSay').textContent='I feel '+FACE[id].label.toLowerCase()+'.';sayIt()})}else this.pick(id)},sel);
   if(mode!=='feel'){const g=$('#stPickGrid');if(!g.childElementCount)Object.keys(PIC).forEach(k=>{if(['happy','sad','angry','scared','worried','calm','excited','bored','tired','poorly'].includes(k))return;const b=document.createElement('button');b.className='pcard';b.dataset.k=k;b.setAttribute('aria-label',SLAB(k));b.innerHTML='<img alt="" draggable="false" loading="lazy" src="'+PIC[k]+'"><span>'+esc(SLAB(k))+'</span>';b.onclick=()=>this.pick(k);g.appendChild(b)});
    $('#stQ').value='';g.querySelectorAll('.pcard').forEach(b=>b.hidden=false)}
-  VG.run('stover',()=>{if(w.classList.contains('show')&&this.mode===mode)return false;w.hidden=false;w.classList.add('show');$('#stOverBody').scrollTop=0;setTimeout(()=>$('#stOverClose').focus({preventScroll:true}),30)})},
+  const scr0=active();VG.run('stover',()=>{if(active()!==scr0)return false; /* d5: a queued story panel never pops up on a screen you have already left */if(w.classList.contains('show')&&this.mode===mode)return false;w.hidden=false;w.classList.add('show');$('#stOverBody').scrollTop=0;setTimeout(()=>$('#stOverClose').focus({preventScroll:true}),30)})},
  closePanel(){VG.run('stover',()=>{const w=$('#stOver');if(!w.classList.contains('show'))return false;w.classList.remove('show');w.hidden=true},true)},
  pick(k){const E=this.editing;if(E&&E.p[this.pickFor]){E.p[this.pickFor][0]=k;this.touch();this.drawPages()}this.closePanel()},
  /* adult editor */
@@ -2340,7 +2370,7 @@ const ST={cur:null,i:0,last:0,editing:null,pickFor:-1,dirty:false,
   store.set('storyBin',s);if(store.get('storyDraft',{}).id===E.id)store.del('storyDraft');this.editing=null;this.dirty=false;$('#stEdit').hidden=true;this.list();toast('Story deleted. You can bring it back.')},
  close(){/* nothing is lost: unsaved changes stay as a draft and come back next time */const E=this.editing;if(E&&this.dirty){clearTimeout(this.dt);E.t=$('#stTitle').value.slice(0,60);store.set('storyDraft',E);toast('Not saved yet. Your changes are kept for next time.')}$('#stEdit').hidden=true;this.editing=null;this.dirty=false}};
 $('#storiesBtn').onclick=once(()=>{$('#stEdit').hidden=true;ST.list();show('stories')});
-$('#stBack').onclick=()=>{Speak.stop&&Speak.stop();ST.closePanel();ST.list();show('stories')};
+$('#stBack').onclick=()=>{Speak.stop&&Speak.stop();ST.closePanel();ST.list();nav(()=>show('stories'))};
 $('#sPrev').onclick=()=>ST.turn(-1);$('#sNext').onclick=()=>ST.turn(1);
 $('#stRead').onclick=()=>{store.set('storyRead',true);ST.read()};
 $('#stFeel').onclick=()=>ST.panel('feel');$('#stOverClose').onclick=()=>ST.closePanel();
