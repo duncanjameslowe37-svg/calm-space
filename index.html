@@ -1189,7 +1189,7 @@ const FX={
   make(){return{bl:[],gw:0,gh:0,rt:0,grab:new Map(),th:0,thA:0,thB:0,tf:9,lastT:-9,lastB:-9,lastS:0,
    TH:[[[70,24,78],[248,128,40]],[[24,52,150],[240,92,172]],[[8,84,96],[176,232,64]],[[112,20,84],[250,200,56]],[[62,28,138],[64,222,208]],[[18,70,40],[250,150,60]]],
    geo(w,h){const H=h*.92,top=h*.04,Lw=Math.min(w*.74,H*.46),cx=w/2,yg0=top+H*.13,yg1=top+H*.75,yb1=top+H;return{H,top,Lw,cx,yg0,yg1,yb1,Hg:yg1-yg0,hw:y=>Lw*(.19+.27*Math.pow(clamp((y-yg0)/(yg1-yg0),0,1),.9))}},
-   init(w,h){const G=this.G=this.geo(w,h),gw=112,cell=G.Lw*.94/gw,gh=Math.ceil(G.Hg/cell);this.cell=cell;
+   init(w,h){const G=this.G=this.geo(w,h),gw=this.GW||140,cell=G.Lw*.94/gw,gh=Math.ceil(G.Hg/cell);this.cell=cell;
     if(gw!==this.gw||gh!==this.gh){this.gw=gw;this.gh=gh;this.off=document.createElement('canvas');this.off.width=gw;this.off.height=gh;this.octx=this.off.getContext('2d');this.img=this.octx.createImageData(gw,gh)}
     if(!this.bl.length)for(let i=0;i<6;i++){const v=.15+.75*i/5;this.bl.push(this.mkB((i%2?.5:-.5)*(.5+.5*Math.random()),v,.07+Math.random()*.06,v>.5?.7:.35))}},
    mkB(u,v,r,temp){return{u,v,r,temp,vu:0,vv:0,ph:Math.random()*TAU,age:0}},
@@ -1224,27 +1224,36 @@ const FX={
     /* wax field */
     const bl=this.bl,n=bl.length,X=new Float32Array(n),Y=new Float32Array(n),R2=new Float32Array(n),E2=new Float32Array(n);
     bl.forEach((b,i)=>{const[px,py]=this.pos(b);X[i]=(px-bx)/cell;Y[i]=(py-G.yg0)/cell;const rr=b.r*G.Lw/cell;R2[i]=rr*rr;const el=1+Math.min(.6,Math.abs(b.vv)*9);E2[i]=1/(el*el)});
-    /* pass 1: the metaball field (wax amount) on the grid */
-    const N=gw*gh;if(!this.fv||this.fv.length!==N)this.fv=new Float32Array(N);const F=this.fv,pl=gh-G.Hg*.065/cell,ps=G.Hg*.03/cell;
-    for(let y=0,p=0;y<gh;y++){const py=G.yg0+(y+.5)*cell,hw=G.hw(py);for(let x=0;x<gw;x++,p++){const dx=bx+(x+.5)*cell-G.cx;if(Math.abs(dx)>hw+cell*2){F[p]=0;continue}
-     let f=0;const e=(y-(pl+Math.sin(x*.12+t*.25)*1.6))/ps;f+=e>3?20:1.3*Math.exp(e);
-     for(let i=0;i<n;i++){const ddx=x-X[i],ddy=y-Y[i],gq=R2[i]/(ddx*ddx+ddy*ddy*E2[i]+1);f+=gq*gq}F[p]=f}}
-    /* pass 2: shading. Backlit liquid (brighter and warmer towards the light below), wax with a hot glowing core,
-       a deeper-coloured edge, a soft sheen on the upper-left of each blob and warm light catching the lower edges */
-    const Hc=mix(W,[255,226,150],.5),Lw2=mix(Lq,W,.35);
-    for(let y=0,p=0,q=0;y<gh;y++){const py=G.yg0+(y+.5)*cell,hw=G.hw(py),fy=y/gh;for(let x=0;x<gw;x++,p++){const dx=bx+(x+.5)*cell-G.cx;
+    /* pass 1: the metaball field (wax amount) and its exact gradient on the grid (analytic, so normals and edges are smooth) */
+    const N=gw*gh;if(!this.fv||this.fv.length!==N){this.fv=new Float32Array(N);this.fx=new Float32Array(N);this.fy=new Float32Array(N)}const F=this.fv,FX=this.fx,FY=this.fy,pl=gh-G.Hg*.065/cell,ps=G.Hg*.03/cell;
+    if(!this.sx||this.sx.length!==gw){this.sx=new Float32Array(gw);this.cx2=new Float32Array(gw)}const SX=this.sx,CX=this.cx2;for(let x=0;x<gw;x++){SX[x]=Math.sin(x*.12+t*.25)*1.6;CX[x]=Math.cos(x*.12+t*.25)*.192}
+    /* each blob only matters within ~4.7 radii (its share there is under .002 of the edge level), so each row only visits nearby blobs */
+    const YR=new Float32Array(n),XR=new Float32Array(n),AC=new Int32Array(n);for(let i=0;i<n;i++){const rr=Math.sqrt(R2[i])*4.7;YR[i]=rr/Math.sqrt(E2[i]);XR[i]=rr}
+    for(let y=0,p=0;y<gh;y++){const py=G.yg0+(y+.5)*cell,hw=G.hw(py);let na=0;for(let i=0;i<n;i++)if(Math.abs(y-Y[i])<YR[i])AC[na++]=i;
+     for(let x=0;x<gw;x++,p++){const dx=bx+(x+.5)*cell-G.cx;if(Math.abs(dx)>hw+cell*2){F[p]=0;FX[p]=0;FY[p]=0;continue}
+     let f,fx=0,fy=0;const e=(y-pl-SX[x])/ps;if(e>3)f=20;else{f=1.3*Math.exp(e);fy=f/ps;fx=-f*CX[x]/ps}
+     for(let k=0;k<na;k++){const i=AC[k];if(Math.abs(x-X[i])>XR[i])continue;const ddx=x-X[i],ddy=y-Y[i],D=ddx*ddx+ddy*ddy*E2[i]+1,gq=R2[i]/D,g2=gq*gq;f+=g2;const c=-4*g2/D;fx+=c*ddx;fy+=c*ddy*E2[i]}F[p]=f;FX[p]=fx;FY[p]=fy}}
+    /* pass 2: shading. Backlit liquid (brighter and warmer towards the light below). Each blob is shaded as a glossy, translucent 3D
+       surface: normals from the field gradient (rounded towards the edge), soft diffuse light and a small glossy highlight from the
+       upper left, an inner glow that grows with wax thickness and towards the lamp below, and warm light caught along lower edges.
+       The edge is anti-aliased from the signed distance to the surface, so it stays smooth (sub-pixel) when the grid is scaled up.
+       Brightness is capped per pixel (never near white). */
+    const Hc=mix(W,[255,226,150],.5),Lw2=mix(Lq,W,.35),RW=gw/16;
+    for(let y=0,p=0,q=0;y<gh;y++){const py=G.yg0+(y+.5)*cell,hw=G.hw(py),fy=y/gh,bk=.35+.65*fy;for(let x=0;x<gw;x++,p++){const dx=bx+(x+.5)*cell-G.cx;
      if(Math.abs(dx)>hw+cell){d[q++]=0;d[q++]=0;d[q++]=0;d[q++]=0;continue}
-     const f=F[p],qx=dx/hw,lb=(.45+.55*fy)*(1-.32*qx*qx),bt=fy*fy*fy*.4,k=f<.92?0:f>1.08?1:sm((f-.92)/.16),inn=f<1.05?0:f>3.2?1:(f-1.05)/2.15,core=f<1.6?0:f>40?1:Math.sqrt((f-1.6)/38.4),halo=f<.12?0:f>.92?.2:.2*sm((f-.12)/.8);
+     const f=F[p],qx=dx/hw,lb=(.45+.55*fy)*(1-.32*qx*qx),bt=fy*fy*fy*.4,halo=f<.12?0:f>.92?.2:.2*sm((f-.12)/.8);
      let r=Lq[0]*(.5+.75*lb),g=Lq[1]*(.5+.75*lb),b=Lq[2]*(.5+.75*lb);r+=(Lw2[0]-r)*bt;g+=(Lw2[1]-g)*bt;b+=(Lw2[2]-b)*bt;const hl=.7+.5*lb;r+=(Math.min(240,Hc[0]*hl)-r)*halo;g+=(Math.min(234,Hc[1]*hl)-g)*halo;b+=(Math.min(230,Hc[2]*hl)-b)*halo;
-     let wr=r,wg=g,wb=b;
-     if(k>0){const gx=(x>0&&x<gw-1?F[p+1]-F[p-1]:0),gy=(y>0&&y<gh-1?F[p+gw]-F[p-gw]:0),gl=Math.sqrt(gx*gx+gy*gy)+1e-4,edge=1-inn,
-       ws=(.88+.14*inn)*(.8+.32*lb);wr=W[0]*ws;wg=W[1]*ws;wb=W[2]*ws;
-       const cc=core*.3+inn*.12;wr+=(Hc[0]-wr)*cc;wg+=(Hc[1]-wg)*cc;wb+=(Hc[2]-wb)*cc;
-       const dk=edge*edge*.1;wg*=1-dk;wb*=1-dk*1.4;
-       const nd=(.6*gx+.8*gy)/gl,sp=nd>.3?Math.pow((nd-.3)/.7,3)*edge*.5:0,lo=-nd>.35?((-nd-.35)/.65)*edge*.35:0;
-       wr+=(250-wr)*sp;wg+=(244-wg)*sp;wb+=(232-wb)*sp;wr+=(Hc[0]-wr)*lo;wg+=(Hc[1]-wg)*lo;wb+=(Hc[2]-wb)*lo;
-       wr=Math.min(246,wr);wg=Math.min(240,wg);wb=Math.min(236,wb)}
-     d[q++]=r+(wr-r)*k;d[q++]=g+(wg-g)*k;d[q++]=b+(wb-b)*k;d[q++]=255}}
+     if(f>.55){const gx=FX[p],gy=FY[p],gl=Math.sqrt(gx*gx+gy*gy)+1e-4,q4=Math.sqrt(Math.sqrt(f)),sd=4*(1-1/q4)*f*q4/gl,cov=sd<-.6?0:sd>.6?1:.5+sd/1.2;
+      if(cov>0){const s=sd<=0?0:sd>=RW?1:sd/RW,mag=1-s,nx=-gx/gl*mag,ny=-gy/gl*mag,nz=Math.sqrt(Math.max(0,1-mag*mag)),
+        th=sd<=0?0:sd>=RW*2.6?1:sd/(RW*2.6),dif=Math.max(0,-.42*nx-.62*ny+.66*nz),nh=Math.max(0,-.231*nx-.341*ny+.912*nz);
+       let s2=nh*nh;s2*=s2;s2*=s2;const s16=s2*s2,spec=s16*.3+s16*s16*.5,rim=(ny>0?ny:0)*mag*(.45+.55*fy),ig=th*th*(3-2*th)*bk*1.15;
+       const ws=.5+.3*dif+.24*lb;let wr=W[0]*ws,wg=W[1]*ws,wb=W[2]*ws;
+       const cc=Math.min(.7,ig*.5+rim*.5+(f>40?.08:f>1.6?.08*(f-1.6)/38.4:0));wr+=(Hc[0]-wr)*cc;wg+=(Hc[1]-wg)*cc;wb+=(Hc[2]-wb)*cc;
+       const dk=mag*mag*.16;wg*=1-dk;wb*=1-dk*1.4;
+       wr+=(250-wr)*spec;wg+=(242-wg)*spec;wb+=(230-wb)*spec;
+       const Y=.2126*wr+.7152*wg+.0722*wb;if(Y>206){const m=206/Y;wr*=m;wg*=m;wb*=m}
+       r+=(wr-r)*cov;g+=(wg-g)*cov;b+=(wb-b)*cov}}
+     d[q++]=r;d[q++]=g;d[q++]=b;d[q++]=255}}
     this.octx.putImageData(this.img,0,0);
     ctx.save();this.glassPath(ctx);ctx.clip();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(this.off,bx,G.yg0,gw*cell,gh*cell);
     ctx.restore();ctx.drawImage(this._so,0,0,w,h)
