@@ -359,7 +359,24 @@ html.hc .btn,html.hc .tile,html.hc .trow{border-width:3px}
 body.mixon #mix .card{border-color:#7fb3e0;box-shadow:0 0 28px rgba(90,150,220,.5)}
 body.mixon #mix h1::after{content:'  \266A playing';color:#9fd0ff;font-size:.8em}
 details.ab{border-top:1px solid var(--line);padding:6px 0}details.ab summary{font-size:1.2rem;font-weight:700;min-height:48px;display:flex;align-items:center;cursor:pointer}
+.stlist{list-style:none;padding:0;margin:0 0 8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.stlist .btn{width:100%;justify-content:flex-start;gap:14px;min-height:84px;text-align:left;padding:10px 14px}
+.stlist img,.stlist .noimg{width:60px;height:60px;border-radius:12px;background:#d9dde3;flex:0 0 auto;object-fit:contain}
+.stlist b{display:block;font-size:1.1rem}.stlist small{display:block;color:#93a0ad}
+#story .stwrap{display:flex;flex-direction:column;height:100%;max-width:760px;margin:0 auto}
+.spage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:12px 20px;transition:opacity .3s ease;touch-action:pan-y}
+.spage.fade{opacity:0}
+@media (prefers-reduced-motion:reduce){.spage{transition:opacity .45s linear}}
+.spic img{width:min(46vh,62vw,320px);height:min(46vh,62vw,320px);border-radius:24px;background:#d9dde3;object-fit:contain;padding:10px;box-sizing:border-box}
+.spic:empty{display:none}
+.stext{font-size:calc(1.55rem*var(--ts,1));line-height:1.45;text-align:center;max-width:30ch;margin:0;color:#d4dae2}
+.snav{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px 20px}
+.snav .snb{min-width:130px;min-height:64px;font-size:1.2rem}
+.stpages{padding-left:22px}.stpages li{margin:10px 0}.stpages textarea{width:100%;min-height:64px;box-sizing:border-box}
+.stpages .row{gap:8px;margin-top:6px;align-items:center}.stpages img{width:44px;height:44px;border-radius:8px;background:#d9dde3}
+.hubrow{grid-template-columns:repeat(4,1fr)}@media (max-width:560px){.hubrow{grid-template-columns:repeat(2,1fr)}}
 </style>
+<script src="snd.js" defer></script>
 </head>
 <body>
 
@@ -388,6 +405,7 @@ details.ab{border-top:1px solid var(--line);padding:6px 0}details.ab summary{fon
    <button class="btn" id="talkBtn"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="8" y="12" width="48" height="34" rx="10" fill="none" stroke="#a7b2bf" stroke-width="4"/><path d="M22 46l-6 10 14-10" fill="#a7b2bf"/></svg>Talk cards</button>
    <button class="btn" id="ynBtn"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M8 34l8 8 14-18" fill="none" stroke="#9fbaa6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M38 22l18 18M56 22L38 40" stroke="#c2a6a2" stroke-width="5" stroke-linecap="round"/></svg>Yes / No</button>
    <button class="btn" id="dayBtn"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="10" y="10" width="44" height="44" rx="8" fill="none" stroke="#a7b2bf" stroke-width="4"/><path d="M18 24h28M18 34h28M18 44h18" stroke="#a7b2bf" stroke-width="4" stroke-linecap="round"/></svg>My day</button>
+   <button class="btn" id="storiesBtn"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 18c-6-5-14-6-22-5v34c8-1 16 0 22 5 6-5 14-6 22-5V13c-8-1-16 0-22 5z" fill="none" stroke="#a7b2bf" stroke-width="4" stroke-linejoin="round"/><path d="M32 18v34" stroke="#a7b2bf" stroke-width="4"/></svg>Stories</button>
   </div>
   <h2 class="sect">Scenes</h2>
   <ul class="tiles" id="tiles"></ul>
@@ -622,6 +640,34 @@ details.ab{border-top:1px solid var(--line);padding:6px 0}details.ab summary{fon
  </div>
 </section>
 
+<!-- Social stories -->
+<section id="stories" class="screen scroll-ok" aria-labelledby="stH">
+ <div class="wrap">
+  <div class="toplink"><button class="btn" data-back aria-label="Back to home">&larr; Home</button><h1 id="stH" tabindex="-1" data-focus style="margin:0;font-size:1.5rem">Stories</h1><span style="width:60px"></span></div>
+  <p class="muted" style="text-align:center;margin:-6px 0 12px">Short picture stories about things that happen, and what I can do.</p>
+  <ul class="stlist" id="stList"></ul>
+  <h2 class="sect" id="stMineH">My stories</h2>
+  <ul class="stlist" id="stMine"></ul>
+  <div class="row" style="margin-top:16px"><button class="btn quiet" id="stMake">Make a story (adult)</button></div>
+  <div id="stEdit" class="card" hidden style="margin-top:12px">
+   <h2 id="stEditH">Make a story</h2>
+   <div class="row" id="stOwn" style="margin-bottom:10px"></div>
+   <label>Title<br><input class="txt" id="stTitle" maxlength="60" autocomplete="off" placeholder="For example: Going to the dentist"></label>
+   <ol class="stpages" id="stPages"></ol>
+   <div class="row" style="margin-top:10px"><button class="btn" id="stAddPage">Add a page</button><button class="btn primary" id="stSave">Save story</button><button class="btn" id="stCancel">Close</button><button class="btn quiet" id="stDel" hidden>Delete this story</button></div>
+   <p class="muted" id="stMsg" aria-live="polite"></p>
+   <div id="stPicker" hidden><h3 style="margin-top:16px">Choose a picture</h3><div class="cards small" id="stPickGrid"></div></div>
+  </div>
+ </div>
+</section>
+<section id="story" class="screen" aria-labelledby="sH">
+ <div class="stwrap">
+  <div class="toplink" style="padding:12px"><button class="btn" id="stBack" aria-label="Back to stories">&larr; Stories</button><h1 id="sH" tabindex="-1" data-focus style="margin:0;font-size:1.25rem;text-align:center;flex:1"></h1><button class="btn" id="stRead" aria-label="Read this page aloud">Read</button></div>
+  <div class="spage" id="sPage" aria-live="polite"><div class="spic" id="sPic"></div><p class="stext" id="sText"></p></div>
+  <div class="snav"><button class="btn snb" id="sPrev" aria-label="Previous page">&larr; Back</button><span class="muted" id="sNum" aria-hidden="true"></span><button class="btn primary snb" id="sNext" aria-label="Next page">Next &rarr;</button></div>
+ </div>
+</section>
+
 <!-- Sound mixer -->
 <section id="mix" class="screen scroll-ok" aria-labelledby="mixH">
  <div class="wrap mixwrap" style="max-width:680px">
@@ -775,8 +821,47 @@ const Sound={ctx:null,master:null,bus:null,nodes:[],type:null,vol:.6,MAX:.26,CEI
   s.playbackRate.value=2**((2.5-5*sz+(Math.random()-.5)*1.2)/12);g.gain.value=1.6*(gain==null?.42:gain)*(.8+.34*sz)*(1+(Math.random()-.5)*.12)/(1+.15*this.taps.length);
   s.connect(g);g.connect(pn);pn.connect(this.popBus);s.start(t0);this.taps.push({s,g,end:t0+s.buffer.duration/s.playbackRate.value});s.onended=()=>{try{s.disconnect();g.disconnect();pn.disconnect()}catch(e){}};
   if(!this.off){this.tapLog.push(performance.now());if(this.tapLog.length>300)this.tapLog.shift()}return true},
- /* deploy 1: recorded-sound hooks are inert (the recordings arrive in a later update), so every sound uses the modelled version */
- pick(){return null},SLP:{},RG:{},ATK:{},TONAL:{},ALIAS:{},
+ /* Real recorded sounds (all CC0 public domain, listed with their sources in README.md), loaded from snd.js and decoded once.
+    Short sounds: several takes of each, a random one every play (never the same twice running), with slight pitch and level variation.
+    Musical takes are tuned to the C pentatonic scale; the take nearest the wanted pitch is used, so nothing is stretched far.
+    Ambience beds: 22-24 s field recordings, made seamless here by crossfading their 3 s tail into the start, played from two
+    different points at once (one left, one right) so they sound wide, and started at a random place each time.
+    If snd.js can't load or decode, every sound falls back to the modelled version. */
+ TONAL:{chime:1,tw:1,note:1,mallet:1,plink:1,drop:1,bloop:1,blub:1,bowl:1},
+ ROOT:{chime:261.63,tw:783.99,note:261.63,mallet:261.63,plink:392,drop:392},
+ ALIAS:{bloopUp:['bloop',293.66/220]},
+ /* each real sound's low-pass (Hz, 24 dB/octave), tuned by measurement so every take passes the same calm limits as the real pops (sound-check.js) */
+ SLP:{chime:1600,note:1600,bowl:1400,blub:1600,air:2000},
+ /* per-sound level trim (so the recordings sit at the same loudness as the modelled sounds) and a few-millisecond soft attack
+    for the sounds whose recorded start is sharpest - it takes the edge off the very first moment without changing the sound */
+ PK:{},RG:{chime:.568,note:.667,blub:.55}, /* tuned 26 Oct (tune5, every take measured against the app's strict sound limits): each real take level-matched to its modelled sound and kept soft. Recordings that could not meet the limits (plink, drop, tw, mallet, ui, thock, bloop) are not shipped; those keep the modelled sound */ATK:{plink:.006,drop:.006,mallet:.005,tw:.006,tick:.004,squelch:.008,wood:.002,thock:.002,ui:.002},
+ atk(g,v,t,nm){const a=this.ATK[nm];if(a){g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+a)}else g.gain.value=v},
+ lastV:{},
+ loadSnd(c){if(this.sndP)return this.sndP;if(!c||!c.decodeAudioData)return Promise.resolve(null);
+  const have=()=>new Promise(res=>{if(typeof SND!=='undefined')return res(true);if(document.readyState==='complete')return res(false);addEventListener('load',()=>res(typeof SND!=='undefined'),{once:true})});
+  const dec=b64=>new Promise((ok,no)=>{try{const s=atob(b64),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);const p=c.decodeAudioData(u.buffer,ok,no);if(p&&p.catch)p.catch(no)}catch(e){no(e)}});
+  let fmt=0;const one=async(o,a)=>{if(!fmt){try{return await dec(o)}catch(e){fmt=1}}return dec(a)};
+  const idle=()=>new Promise(r=>setTimeout(r,this.off?0:8));    // decode a little at a time so the picture never stutters
+  this.sndP=have().then(async ok=>{if(!ok)return null;const clips=[];
+   for(const [o,a] of SND.clips){clips.push(await one(o,a).catch(()=>null));await idle()}
+   const map={};for(const nm in SND.map){const v=SND.map[nm].filter(([i])=>clips[i]).map(([i,k])=>({b:clips[i],k}));if(v.length)map[nm]=v}
+   this.snd={map,beds:{}};
+   for(const k in SND.beds){const B=SND.beds[k];try{this.snd.beds[k]=this.loopify(c,await one(B.o,B.a),B.L,B.X)}catch(e){}await idle()}
+   return this.snd}).catch(()=>null);return this.sndP},
+ sndReady(){return this.loadSnd(this.ctx||new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,1,44100))},
+ /* make a seamless loop of L seconds from L+X seconds: the last X seconds are faded into the first X (equal-power, as the sounds are noise-like) */
+ loopify(c,b,L,X){const sr=b.sampleRate,x=b.getChannelData(0),n=Math.min(Math.round(L*sr),x.length-Math.round(X*sr)),m=Math.round(X*sr),o=c.createBuffer(1,n,sr),y=o.getChannelData(0);
+  for(let i=0;i<n;i++)y[i]=x[i];for(let i=0;i<m;i++){const t=i/m*Math.PI/2;y[i]=x[i]*Math.sin(t)+x[n+i]*Math.cos(t)}return o},
+ /* pick a take: nearest in pitch (within half an octave of the best), random among those, never the last one again */
+ pick(nm,rate){const v=this.snd&&this.snd.map[nm];if(!v)return null;let c=v.map((o,i)=>i);
+  if(this.TONAL[nm]&&v.length>1){const d=v.map(o=>Math.abs(Math.log2(rate*o.k)));const m=Math.min(...d);c=c.filter(i=>d[i]<=m+.5)}
+  if(c.length>1)c=c.filter(i=>i!==this.lastV[nm]);const i=c[Math.floor(Math.random()*c.length)];this.lastV[nm]=i;const pk=this.PK[nm];return pk?{...v[i],k:v[i].k*pk}:v[i]},
+ /* route a real sound: its own gentle low-pass, then the bright bus (reverb, limiter and ceiling still apply) */
+ realOut(nm,pn,dest){const fc=this.SLP[nm]||5000,f=this.filt('lowpass',fc,.54),f2=this.filt('lowpass',fc,1.31);pn.connect(f);f.connect(f2);f2.connect(dest||this.popBus);return{disconnect(){f.disconnect();f2.disconnect()}}},
+ /* a bed recording, wide (two points of the same loop, panned left and right), from a random place, into the bright bed bus */
+ bedLoop(k,g,lp,hp,dest){const B=this.snd&&this.snd.beds[k];dest=dest||this.hb;if(!B||!dest)return false;const c=this.ctx,o=Math.random()*B.duration,f=this.filt('lowpass',lp||5000,.54),f2=this.filt('lowpass',lp||5000,1.31),gn=this.gain(g);f2.connect(f);
+  let last=f;if(hp){const h=this.filt('highpass',hp,.5);f.connect(h);last=h}last.connect(gn);gn.connect(dest);
+  [[-.55,0],[.55,.5]].forEach(([p,d])=>{const s=c.createBufferSource();s.buffer=B;s.loop=true;s.playbackRate.value=1+(d?.004:0);const pn=this.pan(p);s.connect(pn);pn.connect(f2);s.start(c.currentTime,(o+d*B.duration)%B.duration);this.nodes.push(s)});return gn},
  ensure(){if(this.off)return true;if(!this.ctx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;
    let c;try{c=new AC({latencyHint:'interactive'})}catch(e){c=new AC()}this.ctx=c;this.build(c);
    try{if(c.createConstantSource){const k=c.createConstantSource(),z=c.createGain();z.gain.value=0;k.connect(z);z.connect(c.destination);k.start()}}catch(e){} /* silent keep-alive: the audio stays warm so taps sound at once */
@@ -790,7 +875,7 @@ const Sound={ctx:null,master:null,bus:null,nodes:[],type:null,vol:.6,MAX:.26,CEI
    this.master.connect(lp1);this.tapBus.connect(lp1);lp1.connect(lp2);
    const dry=c.createGain(),wet=c.createGain(),cv=c.createConvolver();dry.gain.value=.85;wet.gain.value=.3;cv.buffer=this.room(c);lp2.connect(dry);lp2.connect(cv);cv.connect(wet);dry.connect(lim);wet.connect(lim);
    this.popBus=c.createGain();this.popBus.gain.value=this.vol*this.MAX;{const pf=c.createBiquadFilter();pf.type='lowpass';pf.frequency.value=9000;pf.Q.value=.5;this.popBus.connect(pf);pf.connect(dry);pf.connect(cv)} /* recorded pops: only the very top (above 9 kHz) is softened */
-   if(!this.off)this.loadPops(c);
+   if(!this.off){this.loadPops(c);this.loadSnd(c)}
    const trim=c.createGain();trim.gain.value=1.15;const cl=c.createWaveShaper(),N=4096,cu=new Float32Array(N),C=this.CEIL,a=C*.7;
    for(let i=0;i<N;i++){const x=(i/(N-1))*2-1,m=Math.abs(x);cu[i]=Math.sign(x)*(m<a?m:a+(C-a)*Math.tanh((m-a)/(C-a)))}cl.curve=cu;
    this.an=c.createAnalyser();this.an.fftSize=2048;lim.connect(trim);trim.connect(cl);cl.connect(this.an);this.an.connect(c.destination);this.nb={};this.bank=this.mkBank(c);this.taps=[];if(!this.off)this.warm()},
@@ -885,9 +970,9 @@ note(f,t,gain,bus,buf){const nm=buf||'note',s=this.ctx.createBufferSource(),g=th
    this.lfo(g.gain,.031+i*.013,gn*.45*1.41);this.lfo(v.fl.frequency,.017+i*.007,lp*.25);for(let k=1;k<N;k++)v.os.forEach(o=>o.frequency.setTargetAtTime(ch[k%ch.length][i],n0+k*per,1.3))})},
  pad(fs,gn,lp,chain){fs.forEach((f,i)=>{const g=this.gain(gn*1.41);this.lfo(g.gain,.025+i*.011,gn*.6*1.41);const v=this.voice(f,'triangle',lp,g,chain);this.lfo(v.fl.frequency,.013+i*.006,lp*.2)})},
  /* Render the real sound chain offline (for the sound check): returns the rendered AudioBuffer */
- async offline(secs,fn){const keep={};const F=['ctx','master','tapBus','popBus','popCtx','popBufs','an','bus','nodes','type','fading','nb','bank','taps','mus','pops'];F.forEach(k=>keep[k]=this[k]);
+ async offline(secs,fn){await this.sndReady();const keep={};const F=['ctx','master','tapBus','hb','popBus','popCtx','popBufs','an','bus','nodes','type','fading','nb','bank','taps','mus','pops'];F.forEach(k=>keep[k]=this[k]);
   const mk={};['bus','g','nodes'].forEach(k=>mk[k]=Mixer[k]);
-  const oc=new OfflineAudioContext(2,Math.round(44100*secs),44100);this.off=true;this.ctx=oc;this.bus=null;this.nodes=[];this.fading=[];this.type=null;this.mus=null;this.pops=0;
+  const oc=new OfflineAudioContext(2,Math.round(44100*secs),44100);this.off=true;this.ctx=oc;this.bus=null;this.hb=null;this.nodes=[];this.fading=[];this.type=null;this.mus=null;this.pops=0;
   let buf;try{this.build(oc);this.master.gain.value=this.vol*this.MAX;fn(this,oc);if(this.mus)this.sched(secs);buf=await oc.startRendering()}
   finally{this.off=false;F.forEach(k=>this[k]=keep[k]);Object.assign(Mixer,mk)}return buf},
  setVol(v){v=clamp(+v||0,0,1);this.vol=v;if(!this.ctx)return;const g=this.master.gain,n=this.ctx.currentTime;g.cancelScheduledValues(n);g.setValueAtTime(g.value,n);g.linearRampToValueAtTime(clamp(v,0,1)*this.MAX,n+1);const tb=this.tapBus.gain;tb.cancelScheduledValues(n);tb.setValueAtTime(tb.value,n);tb.linearRampToValueAtTime(v*this.MAX,n+.1);if(this.popBus){const pb=this.popBus.gain;pb.cancelScheduledValues(n);pb.setValueAtTime(pb.value,n);pb.linearRampToValueAtTime(v*this.MAX,n+.1)}},
@@ -909,26 +994,35 @@ note(f,t,gain,bus,buf){const nm=buf||'note',s=this.ctx.createBufferSource(),g=th
  level(){if(!this.an)return 0;const a=new Float32Array(this.an.fftSize);this.an.getFloatTimeDomainData(a);let m=0;for(const v of a)m=Math.max(m,Math.abs(v));return m},
  voices(){return(this.bus?1:0)+(this.br?1:0)+this.fading.length+this.pops+(this.ctx?this.taps.filter(v=>v.end>this.ctx.currentTime).length:0)+(window.Mixer&&Mixer.on?1:0)},
  start(type){if(prefs.hush)return;if(!this.ensure())return;if(this.type===type&&this.bus)return;this.stop();
-  const c=this.ctx,n=c.currentTime,bus=this.bus=this.gain(0);bus.connect(this.master);this.type=type;this.nodes=[];
-  bus.gain.setValueAtTime(0,n);bus.gain.linearRampToValueAtTime(this.BED[type]||this.BED.brown,n+3.5); // slow fade-in
+  const c=this.ctx,n=c.currentTime,bus=this.bus=this.gain(0),hb=this.hb=this.gain(0);bus.connect(this.master);hb.connect(this.popBus);this.type=type;this.nodes=[];
+  const lv=this.BED[type]||this.BED.brown;for(const b of [bus,hb]){b.gain.setValueAtTime(0,n);b.gain.linearRampToValueAtTime(lv,n+3.5)} // slow fade-in (the recorded layer has its own bus that skips the 2.4 kHz warmth filter)
   const chain=(...a)=>{for(let i=0;i<a.length-1;i++)a[i].connect(a[i+1]);a[a.length-1].connect(bus)};
-  if(type==='tones'){this.pad([130.81,196,261.63],.022,700,chain);this.music(bus,[196,220,261.63,293.66,329.63,392,440,523.25],[2,3,3,4],.09)} /* soft C pad, slow pentatonic notes */
+  const go=()=>{if(this.bus!==bus)return;const R=k=>!!(this.snd&&this.snd.beds[k]);
+  if(type==='tones'){this.pad([130.81,196,261.63],.022,700,chain);this.music(bus,[196,220,261.63,293.66,329.63,392,440,523.25],[2,3,3,4],.09)} /* soft C pad, slow kalimba notes */
+  else if(type==='water'&&R('water')){this.bedLoop('water',1.6,1500,150);const g=this.gain(.62);this.lfo(g.gain,.05,.15);chain(this.src('brown'),this.filt('lowpass',420),g)} /* a real gentle stream, with a soft low wash under it */
   else if(type==='water'){const g=this.gain(.8);this.lfo(g.gain,.05,.2);chain(this.src('brown'),this.filt('lowpass',500),g);chain(this.src('pink'),this.filt('highpass',200),this.filt('lowpass',700),this.gain(.07))}
+  else if(type==='rain'&&R('rain')){this.bedLoop('rain',1.15,1700,90);chain(this.src('brown'),this.filt('lowpass',200),this.gain(.2))} /* real rain on a window */
   else if(type==='rain'){chain(this.src('pink'),this.filt('highpass',250),this.filt('lowpass',1300),this.filt('lowpass',1800),this.gain(.42));chain(this.src('brown'),this.filt('lowpass',260),this.gain(.45))}
-  else if(type==='aurora'){this.chords([[130.81,196,329.63,392],[110,164.81,261.63,329.63],[146.83,220,293.66,440],[98,196,293.66,392]],14,.017,620,chain);this.music(bus,[261.63,293.66,329.63,392,440,523.25],[3,4,5,6],.07,'chime')} /* warm drifting chords + slow soft bells */
+  else if(type==='aurora'){this.chords([[130.81,196,329.63,392],[110,164.81,261.63,329.63],[146.83,220,293.66,440],[98,196,293.66,392]],14,.017,620,chain);this.music(bus,[261.63,293.66,329.63,392,440,523.25],[3,4,5,6],.07,'chime')} /* warm drifting chords + slow kalimba */
   else if(type==='night'){this.chords([[110,164.81,220,329.63],[98,146.83,220,293.66],[87.31,130.81,220,261.63],[110,164.81,246.94,329.63]],16,.016,520,chain);
-   const w=this.gain(.1),bf=this.filt('bandpass',420,.6);this.lfo(w.gain,.045,.07);this.lfo(bf.frequency,.02,160);chain(this.src('pink'),bf,this.filt('lowpass',900),w); /* soft night breeze */
+   if(R('wind')){const w=this.bedLoop('wind',.10,1400,90);if(w)this.lfo(w.gain,.045,.18)} /* real breeze in the trees (recorded crickets were dropped: their chirps are almost all above 2 kHz, which the comfort limits don't allow) */
+   else{const w=this.gain(.1),bf=this.filt('bandpass',420,.6);this.lfo(w.gain,.045,.07);this.lfo(bf.frequency,.02,160);chain(this.src('pink'),bf,this.filt('lowpass',900),w)} /* soft night breeze */
    this.music(bus,[523.25,587.33,659.25,783.99,880],[4,5,7,9],.05,'tw')}
+  else if(type==='flow'&&R('flow')){this.bedLoop('flow',.85,1350,60);const g=this.gain(.35);this.lfo(g.gain,.06,.12);chain(this.src('brown'),this.filt('lowpass',380),g);
+   this.music(bus,[293.66,329.63,392,440,523.25],[3,5,6,8],.035,'plink')} /* real running water with the odd distant drip */
   else if(type==='flow'){const g=this.gain(.55);this.lfo(g.gain,.06,.18);chain(this.src('brown'),this.filt('lowpass',420),g);
    const w=this.gain(.07),bf=this.filt('bandpass',600,.8);this.lfo(w.gain,.09,.04);this.lfo(bf.frequency,.05,220);chain(this.src('pink'),bf,this.filt('lowpass',1100),w);
    this.music(bus,[293.66,329.63,392,440,523.25],[3,5,6,8],.035,'plink')} /* flowing water bed with the odd distant drip */
   else if(type==='lavahum'){this.chords([[73.42,110,146.83],[65.41,98,130.81],[73.42,110,164.81]],20,.02,300,chain);const g=this.gain(.5);this.lfo(g.gain,.04,.15);chain(this.src('brown'),this.filt('lowpass',220),g)} /* deep warm hum */
   else if(type==='warm'){this.pad([130.81,196,261.63],.013,520,chain);chain(this.src('brown'),this.filt('lowpass',300),this.gain(.55))} /* soft brown noise with a faint warm pad */
-  else{chain(this.src('brown'),this.filt('lowpass',340),this.gain(1))}},
- kill(f){clearTimeout(f.t);f.ns.forEach(x=>{try{x.stop()}catch(e){}try{x.disconnect()}catch(e){}});try{f.b.disconnect()}catch(e){}const i=this.fading.indexOf(f);if(i>=0)this.fading.splice(i,1)},
- stop(){this.breath(null);if(this.mus){clearInterval(this.mus.tm);this.mus=null}if(!this.bus)return;const b=this.bus,ns=this.nodes,n=this.ctx.currentTime;b.gain.cancelScheduledValues(n);b.gain.setValueAtTime(b.gain.value,n);b.gain.linearRampToValueAtTime(0,n+1.5);
-  while(this.fading.length>=1){const o=this.fading[0];o.b.gain.cancelScheduledValues(n);o.b.gain.setValueAtTime(o.b.gain.value,n);o.b.gain.linearRampToValueAtTime(0,n+.2);this.fading.shift();setTimeout(()=>this.kill(o),300)}
-  const f={b,ns};f.t=setTimeout(()=>this.kill(f),1800);this.fading.push(f);this.bus=null;this.type=null;this.nodes=[]},
+  else{chain(this.src('brown'),this.filt('lowpass',340),this.gain(1))}};
+  /* the recordings may still be decoding on the very first scene: wait for them (up to 2.5 s, during the fade-in), else use the modelled bed */
+  if(this.snd||this.off||!this.sndP)go();else{let d=0;const once=()=>{if(!d){d=1;go()}};this.sndP.then(once,once);setTimeout(once,2500)}},
+ kill(f){clearTimeout(f.t);f.ns.forEach(x=>{try{x.stop()}catch(e){}try{x.disconnect()}catch(e){}});try{f.b.disconnect()}catch(e){}try{f.h&&f.h.disconnect()}catch(e){}const i=this.fading.indexOf(f);if(i>=0)this.fading.splice(i,1)},
+ stop(){this.breath(null);if(this.mus){clearInterval(this.mus.tm);this.mus=null}if(!this.bus)return;const b=this.bus,h=this.hb,ns=this.nodes,n=this.ctx.currentTime;
+  for(const x of [b,h])if(x){x.gain.cancelScheduledValues(n);x.gain.setValueAtTime(x.gain.value,n);x.gain.linearRampToValueAtTime(0,n+1.5)}
+  while(this.fading.length>=1){const o=this.fading[0];for(const x of [o.b,o.h])if(x){x.gain.cancelScheduledValues(n);x.gain.setValueAtTime(x.gain.value,n);x.gain.linearRampToValueAtTime(0,n+.2)}this.fading.shift();setTimeout(()=>this.kill(o),300)}
+  const f={b,h,ns};f.t=setTimeout(()=>this.kill(f),1800);this.fading.push(f);this.bus=null;this.hb=null;this.type=null;this.nodes=[]},
  stopNow(){clearTimeout(this.rt);this.wanted=null;this.stop()},
 };
 
@@ -1289,19 +1383,82 @@ const FX={
      if(best){best.temp=Math.min(1,best.temp+.3);best.gt=this.rt;this.grab.set(id,best)}Sound.play('blub',Sound.qf(98*(best?clamp(.6+(.2-best.r)*2.5,.6,1.1):.9))/98,.3);return}
     const l=this.lp||(this.lp=new Map()),q=l.get(id);l.set(id,[x,y]);if(!q)return;const dx=(x-q[0])/G.Lw,dy=(y-q[1])/G.Hg;
     for(const b of this.bl){if(this.grab.get(id)===b)continue;const[px,py]=this.pos(b);if(Math.hypot(px-x,py-y)<G.Lw*.35){b.vu=clamp(b.vu+dx*.25,-.07,.07);b.vv=clamp(b.vv+dy*.18,-.05,.05)}}}}}},
+ buddy:{name:'Breathing buddy',desc:'Breathe along with Puff, a soft friend who breathes slowly with you. Tap Puff for a giggle',sound:'warm',soundName:'Soft warm pad',pal:'lilac',scale:1.5,live:true,ownSound:true,buddy:true,
+  /* Puff: a round, glossy friend in the middle of the screen. Puff slowly fills up as you breathe in (4 s), holds, and slowly lets go as you
+     breathe out (6 s); gentler pace / reduced motion: 5-2-7-2. Eyes are open on the in-breath and closed (smiling) on the out-breath, little soft
+     puffs drift from Puff's mouth as it breathes out, a thin ring around Puff fills with each phase, and a small star is added for each full breath.
+     The breath sound (recorded where available) plays once per phase. Everything big changes slowly; only small parts (eyes, dots) change quickly. */
+  make(){return{bt:0,ph:'',p:0,wb:0,wv:0,stars:0,glow:0,puffs:[],cyc:0,lastCycle:0,init(){},
+   phases(){return(prefs.gentler||RM.matches)?[5,2,7,2]:[4,1.5,6,1.5]},
+   frame(ctx,w,h,dt,t,P,rdt){const ph=this.phases(),tot=ph[0]+ph[1]+ph[2]+ph[3],live=R.fx===this,st=Math.min(rdt,.05);
+    this.bt+=st;if(this.bt>=tot){this.bt-=tot;this.cyc++;if(live){this.stars=this.stars>=5?1:this.stars+1}}
+    let tt=this.bt,p,name,k,dur;if(tt<ph[0]){p=sm(tt/ph[0]);name='Breathe in';k=tt;dur=ph[0]}else if((tt-=ph[0])<ph[1]){p=1;name='Hold';k=tt;dur=ph[1]}else if((tt-=ph[1])<ph[2]){p=1-sm(tt/ph[2]);name='Breathe out';k=tt;dur=ph[2]}else{tt-=ph[2];p=0;name='Rest';k=tt;dur=ph[3]}
+    if(name!==this.ph){this.ph=name;if(live&&(name==='Breathe in'||name==='Breathe out'))Sound.breath(name==='Breathe in'?'breathIn':'breathOut',dur)}
+    this.p=p;const m=Math.min(w,h),cx=w/2,cy=h*.46,RM0=m*.2,Rb=RM0*(.8+.2*p),cap=(c,mx)=>{c=nr(c);const l=.2126*c[0]+.7152*c[1]+.0722*c[2];return l>mx?c.map(v=>v*mx/l):c},nr=c=>[c[0],Math.max(c[1],.45*c[0]),Math.max(c[2],.4*c[0])]; /* keeps every large area clear of saturated red, whatever the palette: green >= .45 red and blue >= .4 red (sRGB) keeps the linear red share at most .77 (< .8) */
+    /* giggle: a springy squash from a tap (small, quick, local to Puff) */
+    this.wv+=(-90*this.wb-9*this.wv)*st;this.wb+=this.wv*st;const sq=clamp(this.wb,-.12,.12);
+    /* background: a deep vivid wash that brightens a little with each in-breath (slow, so it is never a flash) */
+    const bg=P.bg,c0=P.c[0],c1=P.c[1],c2=P.c[2],c3=P.c[3]||c2;
+    let g=ctx.createRadialGradient(cx,cy,m*.05,cx,cy,Math.max(w,h)*.75);g.addColorStop(0,rgb(nr(mix(bg,c0,.55+.15*p))));g.addColorStop(1,rgb(nr(mix(bg,c3,.25))));ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+    /* aura behind Puff */
+    const ar=Rb*(1.55+.25*p);g=ctx.createRadialGradient(cx,cy,Rb*.6,cx,cy,ar);g.addColorStop(0,rgb(cap(mix(c2,[235,225,240],.25),170),.32+.18*p));g.addColorStop(1,rgb(c2,0));ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,ar,0,TAU);ctx.fill();
+    /* progress ring for the current phase, with a soft dot travelling round it */
+    const rr=RM0*1.42,a0=-Math.PI/2,fr=clamp(k/dur,0,1);ctx.lineCap='round';ctx.lineWidth=Math.max(3,m*.008);ctx.strokeStyle=rgb(cap(mix(c1,bg,.35),120),.55);ctx.beginPath();ctx.arc(cx,cy,rr,0,TAU);ctx.stroke();
+    const rc=cap(mix(c2,[240,232,220],.35),185);ctx.strokeStyle=rgb(rc,.85);ctx.beginPath();ctx.arc(cx,cy,rr,a0,a0+fr*TAU);ctx.stroke();
+    {const ax=cx+Math.cos(a0+fr*TAU)*rr,ay=cy+Math.sin(a0+fr*TAU)*rr,dr=m*.018;const dg=ctx.createRadialGradient(ax,ay,0,ax,ay,dr*2.2);dg.addColorStop(0,rgb(rc,.95));dg.addColorStop(.45,rgb(rc,.5));dg.addColorStop(1,rgb(rc,0));ctx.fillStyle=dg;ctx.beginPath();ctx.arc(ax,ay,dr*2.2,0,TAU);ctx.fill()}
+    /* out-breath puffs: soft little clouds from Puff's mouth that drift up and fade */
+    if(name==='Breathe out'&&!(RM.matches)&&Math.random()<st*3.2)this.puffs.push({x:cx+(Math.random()-.5)*Rb*.2,y:cy+Rb*.32,vx:(Math.random()-.5)*m*.05,vy:-m*(.05+Math.random()*.04),r:m*(.012+Math.random()*.014),a:0,life:0});
+    this.puffs=this.puffs.filter(q=>(q.life+=st)<3.2);for(const q of this.puffs){q.x+=q.vx*st;q.y+=q.vy*st;q.r+=m*.006*st;const al=Math.min(1,q.life/.5)*Math.max(0,1-q.life/3.2)*.35;
+     const pg=ctx.createRadialGradient(q.x,q.y,0,q.x,q.y,q.r*2);pg.addColorStop(0,rgb(cap(mix(c1,[230,232,240],.6),190),al));pg.addColorStop(1,rgb(c1,0));ctx.fillStyle=pg;ctx.beginPath();ctx.arc(q.x,q.y,q.r*2,0,TAU);ctx.fill()}
+    /* feet */
+    const bw=Rb*(1+sq*.6),bh=Rb*(1-sq),fy=cy+bh*.9,fc=cap(mix(c1,bg,.25),150);ctx.fillStyle=rgb(fc);for(const s of [-1,1]){ctx.beginPath();ctx.ellipse(cx+s*bw*.42,fy,bw*.24,bh*.13,0,0,TAU);ctx.fill()}
+    /* body: glossy, lit from the top left, darker underneath, a soft inner glow */
+    const by=cy+Rb*.04*sq;g=ctx.createRadialGradient(cx-bw*.35,by-bh*.42,bw*.06,cx,by,bw*1.05);g.addColorStop(0,rgb(cap(mix(c1,[245,236,236],.42),196)));g.addColorStop(.55,rgb(cap(c1,170)));g.addColorStop(1,rgb(cap(mix(c1,bg,.42),120)));
+    ctx.fillStyle=g;ctx.beginPath();const N=48;for(let i=0;i<=N;i++){const an=i/N*TAU,wob=1+.012*AMP*Math.sin(3*an+t*.7)+.01*Math.sin(5*an-t*.5),x=cx+Math.cos(an)*bw*wob,y=by+Math.sin(an)*bh*wob*(Math.sin(an)>0?1.02:.98);i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath();ctx.fill();
+    g=ctx.createRadialGradient(cx,by+bh*.25,0,cx,by+bh*.25,bw*.8);g.addColorStop(0,rgb(cap(mix(c2,c1,.4),175),.28+.2*p));g.addColorStop(1,rgb(c2,0));ctx.fillStyle=g;ctx.fill();
+    /* gloss highlight */
+    ctx.save();ctx.translate(cx-bw*.36,by-bh*.48);ctx.rotate(-.55);g=ctx.createRadialGradient(0,0,0,0,0,bw*.3);g.addColorStop(0,rgb([226,222,226],.55));g.addColorStop(1,'rgba(226,222,226,0)');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(0,0,bw*.3,bw*.15,0,0,TAU);ctx.fill();ctx.restore();
+    /* face */
+    const ey=by-bh*.08,ex=bw*.3,er=bw*.085,ink='rgb(34,26,44)',open=name==='Breathe in'||name==='Hold';ctx.lineCap='round';
+    for(const s of [-1,1]){const x=cx+s*ex;if(open){ctx.fillStyle=ink;ctx.beginPath();ctx.ellipse(x,ey,er*.78,er*(.95+.1*p),0,0,TAU);ctx.fill();ctx.fillStyle='rgba(215,215,225,.85)';ctx.beginPath();ctx.arc(x-er*.28,ey-er*.35,er*.26,0,TAU);ctx.fill()}
+     else{ctx.strokeStyle=ink;ctx.lineWidth=Math.max(2.5,er*.38);ctx.beginPath();ctx.arc(x,ey-er*.2,er*.75,.15*Math.PI,.85*Math.PI);ctx.stroke()}
+     const ck=ctx.createRadialGradient(x+s*er*.5,ey+er*1.9,0,x+s*er*.5,ey+er*1.9,er*1.6);ck.addColorStop(0,'rgba(222,110,130,.45)');ck.addColorStop(1,'rgba(222,110,130,0)');ctx.fillStyle=ck;ctx.beginPath();ctx.arc(x+s*er*.5,ey+er*1.9,er*1.6,0,TAU);ctx.fill()}
+    const my=ey+er*2.3;ctx.strokeStyle=ink;ctx.fillStyle=ink;ctx.lineWidth=Math.max(2.5,er*.34);
+    if(name==='Breathe out'){ctx.beginPath();ctx.ellipse(cx,my+er*.3,er*.55,er*.68,0,0,TAU);ctx.fill()}else{ctx.beginPath();ctx.arc(cx,my-er*.3,er*.85,.2*Math.PI,.8*Math.PI);ctx.stroke()}
+    /* words and counting dots under Puff */
+    const fs=Math.round(clamp(m*.06,20,44)),ty=Math.min(h-fs*2.2,cy+RM0*1.42+fs*1.6);ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='600 '+fs+'px system-ui,-apple-system,Segoe UI,sans-serif';
+    ctx.fillStyle='rgba(206,212,222,.92)';ctx.fillText(name==='Rest'?'And relax':name,cx,ty);
+    const nd=Math.round(dur),cur=Math.min(nd,Math.floor(k)+1),dy=ty+fs*1.1,dr=Math.max(4,fs*.16);
+    if(name!=='Rest')for(let i=0;i<nd;i++){const x=cx+(i-(nd-1)/2)*dr*4;ctx.fillStyle=i<cur?rgb(rc,.9):rgb(cap(mix(c1,bg,.4),110),.6);ctx.beginPath();ctx.arc(x,dy,dr,0,TAU);ctx.fill()}
+    /* a small star for each full breath (up to 5, then it starts again) */
+    const sr=Math.max(7,m*.018),sy=Math.max(sr*3,cy-RM0*1.42-sr*3.2);for(let i=0;i<5;i++){const x=cx+(i-2)*sr*3.2,on=i<this.stars;ctx.fillStyle=on?rgb(cap([236,196,120],170),.95):rgb(cap(mix(c1,[200,200,210],.25),150),.55);
+     ctx.beginPath();for(let j=0;j<10;j++){const an=-Math.PI/2+j*Math.PI/5,r=j%2?sr*.45:sr;ctx.lineTo(x+Math.cos(an)*r,sy+Math.sin(an)*r)}ctx.closePath();ctx.fill()}},
+   touch(x,y,k,now,id){if(k!=='down')return;const m=Math.min(this.cw,this.ch),cx=this.cw/2,cy=this.ch*.46,Rb=m*.2*(.8+.2*this.p);
+    /* every tap answers at once; quick repeat taps get a softer sound (and Puff's wobble is only re-kicked every 250 ms) */
+    if(Math.hypot(x-cx,y-cy)<Rb*1.15){if(now-(this.lg||0)>250){this.lg=now;this.wv+=RM.matches?.6:1.6;Sound.play('boing',1.1+Math.random()*.2,.3)}else Sound.play('boing',1.15+Math.random()*.15,.12)}
+    else if(now-(this.lt||0)>200){this.lt=now;Sound.play('chime',[1,1.125,1.25,1.5][Math.floor(Math.random()*4)],.22)}else Sound.play('chime',[1,1.125,1.25,1.5][Math.floor(Math.random()*4)],.09)}}}},
  /* ---- Fidgets: react instantly to every finger (each change is small and local); speeds stay capped and the screen stays dim ---- */
  pop:{name:'Pop grid',desc:'Press soft bubbles in and out',sound:'brown',soundName:'Brown noise',pal:'lilac',scale:1.5,fidget:true,
   make(){return{c:[],init(w,h){const L=w>=h,cols=L?8:5,rows=L?5:7,sz=Math.min(w*.88/cols,h*.78/rows),ox=(w-sz*cols)/2,oy=(h-sz*rows)/2;const old=this.c;this.c=[];this.bw=sz*cols;this.bh=sz*rows;this.ox=ox;this.oy=oy;this.sz=sz;
     for(let r=0;r<rows;r++)for(let q=0;q<cols;q++){const i=r*cols+q,o=old[i];this.c.push({x:ox+sz*(q+.5),y:oy+sz*(r+.5),r:sz*.36,v:o?o.v:0,t:o?o.t:0,sq:0,ci:(q+r)%5})}this.last=new Map()},
-   frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,P.c[0],.4));ctx.fillRect(0,0,w,h);const pad=this.sz*.3;ctx.fillStyle=rgb(mix(P.bg,P.c[1],.6));
-    ctx.beginPath();if(ctx.roundRect)ctx.roundRect(this.ox-pad,this.oy-pad,this.bw+pad*2,this.bh+pad*2,this.sz*.4);else ctx.rect(this.ox-pad,this.oy-pad,this.bw+pad*2,this.bh+pad*2);ctx.fill();
-    const k=1-Math.exp(-rdt/.08),ks=Math.exp(-rdt/.12);for(const o of this.c){o.v+=(o.t-o.v)*k;o.sq*=ks;const up=P.c[o.ci],lc=mix(up,[235,236,240],.35),dc=mix(mix(up,[70,72,80],.55),[0,0,0],.3); /* unpopped: full bright colour with a highlight; popped: dark, grey and pressed in */
+   frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,P.c[0],.4));ctx.fillRect(0,0,w,h);const pad=this.sz*.3,bx=this.ox-pad,by=this.oy-pad,bw=this.bw+pad*2,bh=this.bh+pad*2,brr=this.sz*.4,rr=(x,y,w,h,r)=>{ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,w,h,r);else ctx.rect(x,y,w,h)};
+    ctx.fillStyle='rgba(0,0,0,.28)';rr(bx+4,by+10,bw,bh,brr);ctx.fill(); /* soft shadow under the board */
+    {const bc=mix(P.bg,P.c[1],.6),g=ctx.createLinearGradient(0,by,0,by+bh);g.addColorStop(0,rgb(mix(bc,[225,220,230],.14)));g.addColorStop(1,rgb(mix(bc,[0,0,0],.18)));ctx.fillStyle=g;rr(bx,by,bw,bh,brr);ctx.fill();
+     ctx.strokeStyle=rgb(mix(bc,[230,226,236],.25),.5);ctx.lineWidth=2;rr(bx+1.5,by+1.5,bw-3,bh-3,brr-1.5);ctx.stroke()}
+    if(this.flip){this.flip-=rdt;const kf=1-Math.exp(-rdt/.5);for(const o of this.c){o.t=0;o.v+=(0-o.v)*kf}if(this.flip<=0)this.flip=0}
+    const k=this.flip?0:1-Math.exp(-rdt/.08),ks=Math.exp(-rdt/.12);for(const o of this.c){o.v+=(o.t-o.v)*k;o.sq*=ks;const up=P.c[o.ci],lc=mix(up,[235,236,240],.35),dc=mix(mix(up,[70,72,80],.55),[0,0,0],.3); /* unpopped: full bright colour with a highlight; popped: dark, grey and pressed in */
      const g=ctx.createRadialGradient(o.x-o.r*.35*(1-2*o.v),o.y-o.r*.35*(1-2*o.v),o.r*.1,o.x,o.y,o.r);g.addColorStop(0,rgb(mix(lc,mix(up,[0,0,0],.38),o.v)));g.addColorStop(1,rgb(mix(up,mix(up,lc,.55),o.v)));
-     ctx.fillStyle=g;ctx.beginPath();ctx.arc(o.x,o.y,o.r*(1-.06*o.v-.12*o.sq),0,TAU);ctx.fill()}},
+     const rad=o.r*(1-.06*o.v-.12*o.sq);ctx.fillStyle='rgba(0,0,0,'+(.22*(1-o.v)).toFixed(3)+')';ctx.beginPath();ctx.arc(o.x+rad*.08,o.y+rad*.16,rad,0,TAU);ctx.fill(); /* raised bubbles cast a little shadow */
+     ctx.fillStyle=g;ctx.beginPath();ctx.arc(o.x,o.y,rad,0,TAU);ctx.fill();
+     if(o.v<.98){const hx=o.x-rad*.38,hy=o.y-rad*.42,hg=ctx.createRadialGradient(hx,hy,0,hx,hy,rad*.42);hg.addColorStop(0,'rgba(226,226,234,'+(.5*(1-o.v)).toFixed(3)+')');hg.addColorStop(1,'rgba(226,226,234,0)');ctx.fillStyle=hg;ctx.beginPath();ctx.arc(hx,hy,rad*.42,0,TAU);ctx.fill()}
+     if(o.v>.02){ctx.strokeStyle='rgba(0,0,0,'+(.3*o.v).toFixed(3)+')';ctx.lineWidth=Math.max(1.5,rad*.1);ctx.beginPath();ctx.arc(o.x,o.y,rad*.9,Math.PI*1.05,Math.PI*1.95);ctx.stroke()}} /* popped: a dimple with a shaded top edge */
+    if(this.done&&!this.flip){const fs=Math.round(clamp(this.sz*.32,15,26));ctx.font='600 '+fs+'px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='rgba(206,212,222,.9)';ctx.fillText('All popped! Tap to flip the board',w/2,Math.min(h-fs*1.5,by+bh+fs*1.6))}},
    /* every finger presses the bubble under it at once; sliding a finger onto another bubble presses that one too */
    touch(x,y,k,now,id){if(k==='up'){this.last.delete(id);return}let hit=null;for(const o of this.c)if(Math.hypot(x-o.x,y-o.y)<o.r*1.15){hit=o;break}
-    if(k==='move'&&(!hit||this.last.get(id)===hit))return;if(!hit){this.last.set(id,null);return}this.last.set(id,hit);hit.sq=1;if(now-(hit.ft||-1e9)<400){Sound.play(hit.t?'bloop':'bloopUp',.9+.05*hit.ci,.3);return}hit.ft=now;hit.t=1-hit.t;hit.v+=(hit.t-hit.v)*.35;
-    Sound.play(hit.t?'bloop':'bloopUp',.9+.05*hit.ci,.5)}}}},
+    if(this.done&&k==='down'&&now-this.doneAt>900){this.done=false;this.flip=1.6;Sound.play('swish',1,.3);return}
+    if(this.flip)return;if(k==='move'&&(!hit||this.last.get(id)===hit))return;if(!hit){this.last.set(id,null);return}this.last.set(id,hit);hit.sq=1;if(now-(hit.ft||-1e9)<400){Sound.play(hit.t?'bloop':'bloopUp',.9+.05*hit.ci,.3);return}hit.ft=now;hit.t=1-hit.t;hit.v+=(hit.t-hit.v)*.35;
+    Sound.play(hit.t?'bloop':'bloopUp',.9+.05*hit.ci,.5);
+    if(!this.done&&this.c.every(o=>o.t)){this.done=true;this.doneAt=now;[1,1.25,1.5].forEach((r,i)=>setTimeout(()=>Sound.play('chime',r,.2),180+i*160))}else if(this.done&&!this.c.every(o=>o.t))this.done=false}}}},
  spinner:{name:'Spinner',desc:'Drag to spin. It slows down by itself',sound:'brown',soundName:'Brown noise',pal:'blues',scale:1.5,fidget:true,
   /* The spinner follows the finger directly (up to 1.2 turns a second), then carries on with momentum (at most half a turn a second) and slows by itself.
      When it moves fast it blurs into a smooth disc, as a real spinner looks, so the lobes never strobe: above 1.2 rad/s the
@@ -1314,6 +1471,7 @@ const FX={
     const sp=Math.abs((this.a-this.ld)/Math.max(rdt,.001));this.ld=this.a;this.sps=sp>this.sps?sp:this.sps+(sp-this.sps)*(1-Math.exp(-rdt/.3));
     const tk=Math.floor(this.a/(TAU/3));if(tk!==this.tk){this.tk=tk;const n=performance.now();if(n-this.lt>70){this.lt=n;Sound.play('tick',1,.2+.22*Math.min(1,sp/MAXW))}}
     ctx.fillStyle=rgb(mix(P.bg,P.c[0],.45));ctx.fillRect(0,0,w,h);
+    {const cx=w/2,cy=h/2,R=Math.min(w,h)*.3,sg=ctx.createRadialGradient(cx+R*.04,cy+R*.1,R*.5,cx+R*.04,cy+R*.1,R*1.15);sg.addColorStop(0,'rgba(0,0,0,.3)');sg.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=sg;ctx.beginPath();ctx.arc(cx+R*.04,cy+R*.1,R*1.15,0,TAU);ctx.fill()}
     const cx=w/2,cy=h/2,R=Math.min(w,h)*.3,body=mix(P.bg,P.c[1],.9),lobe=mix(mix(P.bg,P.c[1],.9),P.c[2],.5),cap=mix(body,[220,226,235],.35);
     const kbt=sm(clamp((this.sps-1.2)/.8,0,1));if(kbt>=(this.kb||0)){this.kb=kbt;this.kh=0}else{this.kh=(this.kh||0)+rdt;if(this.kh>.4)this.kb=Math.max(kbt,this.kb-rdt/1.5)}const kb=this.kb>.995?1:this.kb<.005?0:this.kb;
     if(kb>0){/* time-averaged spinner: colour at each radius = mix of what passes over it, weighted by angular coverage */
@@ -1323,11 +1481,13 @@ const FX={
       let col=mix(bgc,body,Math.min(1,cb));col=mix(col,lobe,Math.min(1,cl));col=mix(col,cap,cc);g.addColorStop(i/16,rgb(col))}
      ctx.globalAlpha=kb;ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R*1.02,0,TAU);ctx.fill();ctx.globalAlpha=1}
     const N=kb>=1?0:this.sps>.6?4:1,spread=Math.min(TAU/3,this.sps*.05);ctx.globalAlpha=N>1?1-Math.pow(kb,1/N):1-kb;
-    for(let s=0;s<N;s++){const an0=this.a-(N>1?spread*s/(N-1):0);ctx.save();ctx.translate(cx,cy);ctx.rotate(an0);ctx.fillStyle=rgb(body);
+    for(let s=0;s<N;s++){const an0=this.a-(N>1?spread*s/(N-1):0);ctx.save();ctx.translate(cx,cy);ctx.rotate(an0);{const ca=Math.cos(-an0),sa=Math.sin(-an0),lx=-.28*R,ly=-.34*R,gx=lx*ca-ly*sa,gy=lx*sa+ly*ca,bg2=ctx.createRadialGradient(gx,gy,R*.05,gx,gy,R*1.45);bg2.addColorStop(0,rgb(mix(body,cap,.32)));bg2.addColorStop(.55,rgb(body));bg2.addColorStop(1,rgb(mix(body,P.bg,.35)));ctx.fillStyle=bg2;this.spl=[ca,sa]}
      for(let i=0;i<3;i++){const an=i*TAU/3,x=Math.cos(an)*R*.62,y=Math.sin(an)*R*.62;ctx.beginPath();ctx.arc(x,y,R*.38,0,TAU);ctx.fill()}
      ctx.beginPath();ctx.arc(0,0,R*.42,0,TAU);ctx.fill();ctx.fillStyle=rgb(lobe);
-     for(let i=0;i<3;i++){const an=i*TAU/3;ctx.beginPath();ctx.arc(Math.cos(an)*R*.62,Math.sin(an)*R*.62,R*.22,0,TAU);ctx.fill()}
-     ctx.fillStyle=rgb(cap);ctx.beginPath();ctx.arc(0,0,R*.18,0,TAU);ctx.fill();ctx.restore()}ctx.globalAlpha=1},
+     for(let i=0;i<3;i++){const an=i*TAU/3,lx=Math.cos(an)*R*.62,ly=Math.sin(an)*R*.62,[ca,sa]=this.spl,ox=-.07*R,oy=-.08*R,hx=lx+ox*ca-oy*sa,hy=ly+ox*sa+oy*ca;ctx.fillStyle=rgb(mix(lobe,P.bg,.28));ctx.beginPath();ctx.arc(lx,ly,R*.235,0,TAU);ctx.fill();const lg=ctx.createRadialGradient(hx,hy,R*.01,lx,ly,R*.22);lg.addColorStop(0,rgb(mix(lobe,cap,.45)));lg.addColorStop(.6,rgb(lobe));lg.addColorStop(1,rgb(mix(lobe,P.bg,.2)));ctx.fillStyle=lg;ctx.beginPath();ctx.arc(lx,ly,R*.2,0,TAU);ctx.fill();ctx.strokeStyle='rgba(0,0,0,.22)';ctx.lineWidth=R*.018;ctx.beginPath();ctx.arc(lx,ly,R*.12,0,TAU);ctx.stroke()}
+     ctx.fillStyle=rgb(cap);ctx.beginPath();ctx.arc(0,0,R*.18,0,TAU);ctx.fill();ctx.restore()}ctx.globalAlpha=1;
+    {const hg=ctx.createRadialGradient(cx-R*.06,cy-R*.07,0,cx-R*.06,cy-R*.07,R*.12);hg.addColorStop(0,'rgba(228,230,236,.5)');hg.addColorStop(1,'rgba(228,230,236,0)');ctx.fillStyle=hg;ctx.beginPath();ctx.arc(cx-R*.06,cy-R*.07,R*.12,0,TAU);ctx.fill();
+     ctx.strokeStyle=rgb(mix(cap,[40,44,52],.5),.45);ctx.lineWidth=Math.max(1.5,R*.02);ctx.beginPath();ctx.arc(cx,cy,R*.18,0,TAU);ctx.stroke()}},
    touch(x,y,k,now,id){const an=Math.atan2(y-this.ch/2,x-this.cw/2);
     if(k==='down'){if(this.dr)return;this.dr={id,an,t:now};this.w*=.3;this.vel=0;Sound.play('tick',.8,.3);return}
     if(!this.dr||this.dr.id!==id)return;
@@ -1339,8 +1499,14 @@ const FX={
     for(let r=0;r<rows;r++)for(let q=0;q<cols;q++){const i=r*cols+q,o=old[i];const sw=Math.min(cw*.7,chh*1.4),sh=Math.min(sw*.46,chh*.6);this.c.push({x:ox+cw*(q+.5),y:oy+chh*(r+.5),w:sw,h:sh,on:o?o.on:false,v:o?o.v:0,sq:0,ci:(q+r)%5})}},
    frame(ctx,w,h,dt,t,P,rdt){ctx.fillStyle=rgb(mix(P.bg,P.c[0],.35));ctx.fillRect(0,0,w,h);const k=1-Math.exp(-rdt/.06),ks=Math.exp(-rdt/.12);
     for(const o of this.c){o.v+=((o.on?1:0)-o.v)*k;o.sq*=ks;const tr=mix([38,42,50],P.c[o.ci],o.v), /* off: dark grey track; on: full colour */x0=o.x-o.w/2,y0=o.y-o.h/2,rr=o.h/2;
-     ctx.fillStyle=rgb(tr);ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x0,y0,o.w,o.h,rr);else ctx.rect(x0,y0,o.w,o.h);ctx.fill();
-     ctx.fillStyle=rgb(mix([215,220,228],P.c[o.ci],.15));ctx.beginPath();ctx.arc(x0+rr+(o.w-2*rr)*sm(o.v),o.y,rr*(.78+.1*o.sq),0,TAU);ctx.fill()}},
+     const pill=(x,y,w,h,r)=>{ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,w,h,r);else ctx.rect(x,y,w,h)};
+     ctx.fillStyle=rgb(mix(P.bg,[0,0,0],.25),.55);pill(x0-2,y0-2,o.w+4,o.h+5,rr+2);ctx.fill(); /* recess around the track */
+     {const g=ctx.createLinearGradient(0,y0,0,y0+o.h);g.addColorStop(0,rgb(mix(tr,[0,0,0],.3)));g.addColorStop(.45,rgb(tr));g.addColorStop(1,rgb(mix(tr,[220,224,232],.1)));ctx.fillStyle=g;pill(x0,y0,o.w,o.h,rr);ctx.fill()}
+     {const dx=x0+rr*.95,lg=ctx.createRadialGradient(dx,o.y,0,dx,o.y,rr*.5);lg.addColorStop(0,rgb(mix(P.c[o.ci],[230,232,236],.4),.85*o.v));lg.addColorStop(1,rgb(P.c[o.ci],0));ctx.fillStyle=lg;ctx.beginPath();ctx.arc(dx,o.y,rr*.5,0,TAU);ctx.fill()} /* little light on the left, glowing when on */
+     const kx=x0+rr+(o.w-2*rr)*sm(o.v),kr=rr*(.78+.1*o.sq),kc=mix([215,220,228],P.c[o.ci],.15);
+     ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.arc(kx+kr*.06,o.y+kr*.14,kr*1.02,0,TAU);ctx.fill();
+     {const g=ctx.createRadialGradient(kx-kr*.35,o.y-kr*.4,kr*.08,kx,o.y,kr);g.addColorStop(0,rgb(mix(kc,[236,236,240],.25)));g.addColorStop(.7,rgb(kc));g.addColorStop(1,rgb(mix(kc,[60,64,72],.35)));ctx.fillStyle=g;ctx.beginPath();ctx.arc(kx,o.y,kr,0,TAU);ctx.fill()}
+     ctx.strokeStyle=rgb(mix(kc,[80,84,92],.5),.35);ctx.lineWidth=Math.max(1,kr*.06);for(const s of [-1,0,1]){ctx.beginPath();ctx.moveTo(kx+s*kr*.22,o.y-kr*.32);ctx.lineTo(kx+s*kr*.22,o.y+kr*.32);ctx.stroke()}}}, /* grip lines on the knob */
    touch(x,y,k){if(k!=='down')return;for(const o of this.c)if(Math.abs(x-o.x)<o.w*.6&&Math.abs(y-o.y)<o.h*.9){o.on=!o.on;o.sq=1;o.v+=((o.on?1:0)-o.v)*.3;Sound.play('wood',o.on?1:.8,.5);return}}}}},
  squish:{name:'Squish',desc:'Press and stretch a soft blob',sound:'water',soundName:'Gentle water',pal:'warm',scale:1.5,fidget:true,ownMark:true,
   /* The edge follows each finger at once (springy, like jelly) and wobbles gently back when let go; a soft dent shows under each finger */
@@ -1350,14 +1516,19 @@ const FX={
     for(let i=0;i<n;i++){const an=i/n*TAU;let tg=1+.025*AMP*Math.sin(3*an+t*.4);for(const [a,pd] of pa){let d=Math.abs(an-a);d=Math.min(d,TAU-d);const f=Math.exp(-d*d/.18);tg=tg*(1-f)+pd*f}
      this.vr[i]+=(K*(tg-this.r[i])-D*this.vr[i])*st;this.vr[i]=clamp(this.vr[i],-3,3);this.r[i]+=this.vr[i]*st}
     const c=P.c[1],lc=mix(c,[235,228,220],.3),g=ctx.createRadialGradient(cx-R*.3,cy-R*.35,R*.1,cx,cy,R*1.2);g.addColorStop(0,rgb(lc));g.addColorStop(1,rgb(mix(c,P.bg,.3)));
-    ctx.fillStyle=g;ctx.beginPath();for(let i=0;i<=n;i++){const j=i%n,an=j/n*TAU,rr=R*this.r[j];const x=cx+Math.cos(an)*rr,y=cy+Math.sin(an)*rr;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath();ctx.fill();
+    {let mr=0;for(let i=0;i<n;i++)mr+=this.r[i];mr/=n;const sy=cy+R*mr*.98,sg=ctx.createRadialGradient(cx,sy,0,cx,sy,R*mr*1.05);sg.addColorStop(0,'rgba(0,0,0,.32)');sg.addColorStop(1,'rgba(0,0,0,0)');ctx.save();ctx.translate(cx,sy);ctx.scale(1,.22);ctx.translate(-cx,-sy);ctx.fillStyle=sg;ctx.beginPath();ctx.arc(cx,sy,R*mr*1.05,0,TAU);ctx.fill();ctx.restore()}
+    const path=()=>{ctx.beginPath();for(let i=0;i<=n;i++){const j=i%n,an=j/n*TAU,rr=R*this.r[j];const x=cx+Math.cos(an)*rr,y=cy+Math.sin(an)*rr;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath()};
+    ctx.fillStyle=g;path();ctx.fill();
+    ctx.save();path();ctx.clip();{const rg=ctx.createRadialGradient(cx-R*.12,cy-R*.15,R*.6,cx,cy,R*1.35);rg.addColorStop(0,'rgba(0,0,0,0)');rg.addColorStop(1,rgb(mix(c,[20,10,10],.6),.55));ctx.fillStyle=rg;ctx.fillRect(cx-R*1.6,cy-R*1.6,R*3.2,R*3.2)} /* darker towards the rim: looks round and squashy */
+     {const ia=Math.round(n*.625)%n,hr=R*this.r[ia],hx=cx-hr*.42,hy=cy-hr*.46,hg=ctx.createRadialGradient(hx,hy,0,hx,hy,hr*.42);hg.addColorStop(0,'rgba(232,228,224,.5)');hg.addColorStop(.5,'rgba(232,228,224,.16)');hg.addColorStop(1,'rgba(232,228,224,0)');ctx.fillStyle=hg;ctx.save();ctx.translate(hx,hy);ctx.rotate(-.6);ctx.scale(1,.6);ctx.translate(-hx,-hy);ctx.beginPath();ctx.arc(hx,hy,hr*.42,0,TAU);ctx.fill();ctx.restore()}
+     {const bx=cx+R*.3,by=cy+R*.42,bg2=ctx.createRadialGradient(bx,by,0,bx,by,R*.35);bg2.addColorStop(0,rgb(mix(c,P.c[2],.5),.25));bg2.addColorStop(1,rgb(c,0));ctx.fillStyle=bg2;ctx.beginPath();ctx.arc(bx,by,R*.35,0,TAU);ctx.fill()}ctx.restore(); /* soft bounce light from below */
     for(const [id,p] of this.pp){p.a=p.on?Math.min(1,p.a+rdt/.15):p.a*Math.exp(-rdt/.4);if(!p.on&&p.a<.02){this.pp.delete(id);continue}
      const dg=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,R*.35);dg.addColorStop(0,rgb(mix(c,[30,20,20],.55),.4*p.a));dg.addColorStop(1,rgb(c,0));ctx.fillStyle=dg;ctx.beginPath();ctx.arc(p.x,p.y,R*.35,0,TAU);ctx.fill()}},
    touch(x,y,k,now,id){if(k==='down'){const o=this.pp.get(id);this.pp.set(id,{x,y,on:true,a:o?o.a:0,lx:x,ly:y});Sound.play('squelch',1,.45);return}const p=this.pp.get(id);if(!p)return;
     if(k==='up'){p.on=false;Sound.play('boing',1,.35);return}p.x=x;p.y=y;if(Math.hypot(x-p.lx,y-p.ly)>40&&now-this.ls>140){this.ls=now;p.lx=x;p.ly=y;const d=Math.hypot(x-this.cw/2,y-this.ch/2)/(Math.min(this.cw,this.ch)*.3);Sound.play('stretch',.8+.4*clamp(d,0,1.4),.3)}}}}},
 
 };
-const ORDER=['wash','bubbles','ripples','stars','lava'],FORDER=['pop','spinner','switches','squish'];
+const ORDER=['wash','bubbles','ripples','stars','lava','buddy'],FORDER=['pop','spinner','switches','squish'];
 
 /* ---------- Renderer ---------- */
 const R={cv:$('#stage'),ctx:null,fx:null,id:null,run:false,raf:0,last:0,t:0,w:0,h:0,sc:1,fade:0,
@@ -1479,7 +1650,7 @@ function openEffect(id,over,isCalm){if(classroom)return;Gate.close();curId=id;S=
  R.tgt.pal=S.pal;R.tgt.speed=S.speed*gentleFactor();R.tgt.bright=S.bright;show('player');R.start(id);
  $('#stage').setAttribute('aria-label',FX[id].name+': '+FX[id].desc.toLowerCase()+'. Tap to show controls.');$('#fxTitle').innerHTML=esc(FX[id].name)+(prefs.hush?'<span id="hushInScene">Hush is on: no sound</span>':'');
  lockAdult();apply();syncControls();showBar(true);if(prefs.awake)Wake.on()}
-function apply(persist){R.tgt.pal=S.pal;R.tgt.speed=clamp(S.speed,.2,1.5)*gentleFactor();R.tgt.bright=clamp(S.bright,.25,.85);R.breathe=!!S.breathe;
+function apply(persist){R.tgt.pal=S.pal;R.tgt.speed=clamp(S.speed,.2,1.5)*gentleFactor();R.tgt.bright=clamp(S.bright,.25,.85);R.breathe=!!S.breathe&&!(FX[curId]||{}).buddy;
  Sound.setVol(S.vol);if(S.sound){Sound.ensure();Sound.want(FX[curId].sound)}else Sound.want(null);
  if(persist){SESS[curId]=Object.assign({},S);if(!$('#adultOpts').hidden)store.set('fx.'+curId,S)}} // a child's tweaks last for this visit; adults can keep them
 const pct=v=>Math.round(v*100)+'%';
@@ -1881,14 +2052,67 @@ twoStep($('#dayResetTicks'),"Clear today's ticks",'Tap again to clear',()=>{cons
 $('#talkBtn').onclick=once(()=>{$('#cardEdit').hidden=true;drawStrip();buildCards();show('talk');requestAnimationFrame(fitCards)});
 $('#ynBtn').onclick=once(()=>show('yesno'));
 $('#dayBtn').onclick=once(()=>{$('#dayEdit').hidden=true;drawDay();show('day')});
+/* ---------- Social stories: short first-person picture stories (one sentence or two per page) about everyday situations,
+   in the usual social-story style: what happens, how it might feel, what I can do, and a calm ending. Read aloud on request,
+   page turns are gentle (a soft fade and a quiet page sound, at most one turn every 0.55 s). Adults can make their own (saved on this device only). */
+const STORIES=[
+ {id:'doctor',t:'Going to the doctor',p:[['doctor','Sometimes I go to see the doctor. Doctors help people stay well.'],['car','I might go in the car with my grown-up.'],['book','At the doctor\'s there is a waiting room. I might wait for a while. I can bring something to do.'],['myturn','When it is my turn, someone will call my name.'],['doctor','The doctor might look in my ears or listen to my chest. It might feel strange, but it does not last long.'],['worried','If I feel worried, I can hold my grown-up\'s hand or squeeze something soft.'],['home','When the doctor has finished, I can go home.']]},
+ {id:'change',t:'When plans change',p:[['look','Most days I know what will happen. My day shows me what comes next.'],['stop','Sometimes plans change. This happens to everyone.'],['angry','When a plan changes, I might feel cross, sad or worried. That is OK.'],['brk','I can take slow breaths, ask for a break, or open my calm space.'],['help','A grown-up can show me the new plan.'],['calm','Plans changing is not my fault. Soon I will know what happens next.']]},
+ {id:'firedrill',t:'A fire drill',p:[['school','At school we sometimes have a fire drill. It is practice for keeping safe.'],['loud','The fire alarm is very loud. It might make me jump.'],['quiet','I can cover my ears or wear my ear defenders.'],['outside','Everyone stops what they are doing and walks outside to the meeting place.'],['teacher','We stand in a line while a grown-up checks that everyone is there.'],['finished','When the drill is over, the alarm stops and we go back inside.'],['happy','I kept myself safe. Well done me!']]},
+ {id:'shops',t:'Going to the shops',p:[['shop','Sometimes I go to the shops with my grown-up.'],['loud','Shops can be busy, bright and noisy.'],['look','We buy the things on our list. I can help to find them.'],['wait','We might wait in a queue to pay. Waiting can be hard, but the queue keeps moving.'],['brk','If it feels too much, I can tell my grown-up or ask for a break.'],['home','When we have finished, we go home.']]},
+ {id:'helper',t:'A new helper',p:[['hello','Sometimes a new person comes to help me. They might be a support worker, a carer or a teacher.'],['hello','They will tell me their name. I can say hello in my own way.'],['friend','It can take time to get to know someone new. That is OK.'],['like','My new helper will learn what I like and what I need.'],['tablet','I can show them my talk cards, my day or my calm space.'],['happy','Little by little, my new helper will feel familiar.']]},
+ {id:'haircut',t:'Getting a haircut',p:[['me','Sometimes my hair gets long and needs a cut.'],['wait','At the hairdresser\'s I sit in a big chair. They might put a cape around me.'],['loud','I might hear scissors snipping or a buzzing clipper. It might tickle.'],['look','I can look at something I like, or count slowly in my head.'],['stop','If I need a break, I can say stop or show my stop card.'],['happy','When it is finished, my hair looks neat and tidy.']]},
+ {id:'toomuch',t:'When things feel too much',p:[['loud','Sometimes there is too much noise, light or busyness around me.'],['worried','My body might feel fizzy, hot or wobbly. My thoughts get busy.'],['tired','This is called feeling overwhelmed. It happens to lots of people.'],['quiet','I can go somewhere quiet, cover my ears or open my calm space.'],['calm','I can breathe slowly with my breathing buddy.','buddy'],['calm','After a while, the big feeling gets smaller.']]}];
+const SPIC=id=>(id&&PIC[id])||'';
+const ST={cur:null,i:0,last:0,editing:null,pickFor:-1,
+ mine(){const a=store.get('stories',[]);return Array.isArray(a)?a.filter(s=>s&&typeof s.t==='string'&&Array.isArray(s.p)&&s.p.length):[]},
+ all(){return[...STORIES,...this.mine()]},
+ item(s,ul){const li=document.createElement('li'),b=document.createElement('button'),src=SPIC(s.p[0][0]);b.className='btn';b.setAttribute('aria-label',s.t+'. '+s.p.length+' pages');
+  b.innerHTML=(src?'<img alt="" draggable="false" src="'+src+'">':'<span class="noimg"></span>')+'<span><b>'+esc(s.t)+'</b><small>'+s.p.length+' pages</small></span>';b.onclick=once(()=>this.open(s.id));li.appendChild(b);ul.appendChild(li)},
+ list(){const a=$('#stList'),b=$('#stMine'),m=this.mine();a.innerHTML='';b.innerHTML='';STORIES.forEach(s=>this.item(s,a));m.forEach(s=>this.item(s,b));
+  if(!m.length)b.innerHTML='<li><p class="muted">None yet. An adult can make one with "Make a story".</p></li>'},
+ open(id){const s=this.all().find(x=>x.id===id);if(!s)return;this.cur=s;this.i=0;this.draw(false);show('story');if(prefs.speak&&store.get('storyRead',false))this.read()},
+ draw(anim){const s=this.cur;if(!s)return;const pg=s.p[this.i]||s.p[0],end=this.i>=s.p.length-1,put=()=>{const src=SPIC(pg[0]);$('#sPic').innerHTML=src?'<img alt="" draggable="false" src="'+src+'">':'';$('#sText').textContent=pg[1];
+   const go=$('#sGo');if(go)go.remove();if(pg[2]&&FX[pg[2]]){const b=document.createElement('button');b.id='sGo';b.className='btn';b.textContent='Open '+FX[pg[2]].name.toLowerCase();b.onclick=once(()=>openEffect(pg[2]));$('#sPage').appendChild(b)}};
+  $('#sH').textContent=s.t;$('#sNum').textContent=(this.i+1)+' / '+s.p.length;$('#sPrev').disabled=this.i===0;$('#sNext').textContent=end?'The end':'Next \u2192';$('#sNext').setAttribute('aria-label',end?'Finish the story':'Next page');
+  const el=$('#sPage');clearTimeout(this.ft);if(anim){el.classList.add('fade');this.ft=setTimeout(()=>{put();el.classList.remove('fade')},RM.matches?220:300)}else{el.classList.remove('fade');put()}},
+ turn(d){const n=performance.now(),s=this.cur;if(!s||n-this.last<550)return;const j=this.i+d;if(j<0)return;if(j>=s.p.length){this.last=n;Speak.stop&&Speak.stop();show('stories');return}
+  this.last=n;this.i=j;Sound.play('page',d>0?1:.92,.32);this.draw(true);if(prefs.speak&&store.get('storyRead',false))setTimeout(()=>this.read(),320)},
+ read(){const s=this.cur;if(!s)return;const pg=s.p[this.i];if(pg)Speak.say(pg[1],'talk')},
+ /* adult editor */
+ edit(id){const s=this.mine().find(x=>x.id===id);this.editing=s?JSON.parse(JSON.stringify(s)):{id:'my'+Date.now().toString(36),t:'',p:[['','']]};this.delArm=0;
+  $('#stEdit').hidden=false;$('#stEditH').textContent=s?'Change this story':'Make a story';$('#stDel').hidden=!s;$('#stDel').textContent='Delete this story';$('#stTitle').value=this.editing.t;$('#stMsg').textContent='';$('#stPicker').hidden=true;this.drawPages();this.own();$('#stEdit').scrollIntoView({block:'start'})},
+ own(){const d=$('#stOwn'),m=this.mine();d.innerHTML='';if(!m.length)return;const h=document.createElement('p');h.className='muted';h.textContent='Or change one of my stories:';d.appendChild(h);m.forEach(x=>{const b=document.createElement('button');b.className='btn';b.textContent=x.t;b.onclick=()=>this.edit(x.id);d.appendChild(b)})},
+ drawPages(){const ol=$('#stPages'),E=this.editing;ol.innerHTML='';E.p.forEach((pg,i)=>{const li=document.createElement('li'),src=SPIC(pg[0]);
+  li.innerHTML='<label>Page '+(i+1)+'<br><textarea class="txt" maxlength="240" rows="2"></textarea></label><div class="row">'+(src?'<img alt="" src="'+src+'">':'')+'<button class="btn" data-a="pic">'+(src?'Change picture':'Add a picture')+'</button>'+(i?'<button class="btn" data-a="up" aria-label="Move page '+(i+1)+' up">Move up</button>':'')+(E.p.length>1?'<button class="btn quiet" data-a="rm" aria-label="Remove page '+(i+1)+'">Remove</button>':'')+'</div>';
+  const ta=li.querySelector('textarea');ta.value=pg[1];ta.oninput=()=>{pg[1]=ta.value.slice(0,240)};
+  li.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const a=b.dataset.a;if(a==='pic'){this.pickFor=i;this.picker()}else if(a==='up'){[E.p[i-1],E.p[i]]=[E.p[i],E.p[i-1]];this.drawPages()}else if(a==='rm'&&E.p.length>1){E.p.splice(i,1);this.drawPages()}});ol.appendChild(li)})},
+ picker(){const g=$('#stPickGrid');if(!g.childElementCount){Object.keys(PIC).forEach(k=>{const b=document.createElement('button');b.className='pcard';b.setAttribute('aria-label',libLabel(k));b.innerHTML='<img alt="" draggable="false" src="'+PIC[k]+'"><span>'+esc(libLabel(k))+'</span>';
+   b.onclick=()=>{const E=this.editing;if(E&&E.p[this.pickFor]){E.p[this.pickFor][0]=k;this.drawPages()}$('#stPicker').hidden=true};g.appendChild(b)})}$('#stPicker').hidden=false;$('#stPicker').scrollIntoView({block:'start'})},
+ save(){const E=this.editing;if(!E)return;E.t=$('#stTitle').value.trim().slice(0,60);E.p=E.p.map(p=>[p[0]||'',(p[1]||'').trim().slice(0,240)]).filter(p=>p[1]||p[0]);
+  if(!E.t||!E.p.length){$('#stMsg').textContent='Add a title and at least one page first.';if(!E.p.length)E.p=[['','']];return}
+  const a=this.mine().filter(s=>s.id!==E.id);if(a.length>=40){$('#stMsg').textContent='There are already 40 stories. Delete one first.';return}a.push(E);store.set('stories',a);$('#stMsg').textContent='Saved.';this.list();this.own();$('#stDel').hidden=false},
+ del(){const E=this.editing;if(!E)return;if(!this.delArm||performance.now()-this.delArm>4000){this.delArm=performance.now();$('#stDel').textContent='Tap again to delete';return}
+  store.set('stories',this.mine().filter(s=>s.id!==E.id));this.editing=null;$('#stEdit').hidden=true;this.list();this.own()}};
+$('#storiesBtn').onclick=once(()=>{$('#stEdit').hidden=true;ST.list();show('stories')});
+$('#stBack').onclick=()=>{Speak.stop&&Speak.stop();ST.list();show('stories')};
+$('#sPrev').onclick=()=>ST.turn(-1);$('#sNext').onclick=()=>ST.turn(1);
+$('#stRead').onclick=()=>{store.set('storyRead',true);ST.read()};
+$('#stMake').onclick=()=>Gate.open(()=>{Adult.open();ST.edit(null)});
+$('#stAddPage').onclick=()=>{const E=ST.editing;if(E&&E.p.length<20){E.p.push(['','']);ST.drawPages()}};
+$('#stSave').onclick=()=>ST.save();$('#stCancel').onclick=()=>{$('#stEdit').hidden=true;ST.editing=null};$('#stDel').onclick=()=>ST.del();
+{let sx=null,sy=0;const el=$('#sPage');el.addEventListener('pointerdown',e=>{sx=e.clientX;sy=e.clientY});el.addEventListener('pointerup',e=>{if(sx==null)return;const dx=e.clientX-sx,dy=e.clientY-sy;sx=null;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5)ST.turn(dx<0?1:-1)});el.addEventListener('pointercancel',()=>sx=null)}
+document.addEventListener('keydown',e=>{if(active()!=='story')return;if(e.key==='ArrowRight')ST.turn(1);else if(e.key==='ArrowLeft')ST.turn(-1)});
+
 loadOwn();
 
 /* ---------- Sound mixer: layered background sound, each layer ramps slowly, total capped by the same limiter ---------- */
 const MIXCH=[['rain','Rain'],['brown','Brown noise'],['pink','Pink noise'],['waves','Waves'],['hum','Soft pad']];
 const Mixer={on:false,bus:null,g:{},nodes:[],lv:Object.assign({rain:.5,brown:0,pink:0,waves:0,hum:0,vol:.4},store.get('mix',{})),
- build(){const c=Sound.ctx,mk=(...a)=>{for(let i=0;i<a.length-1;i++)a[i].connect(a[i+1]);return a[a.length-1]};this.bus=Sound.gain(0);this.bus.connect(Sound.master);this.nodes=[];const keep=Sound.nodes;Sound.nodes=this.nodes;
+ build(){const c=Sound.ctx,mk=(...a)=>{for(let i=0;i<a.length-1;i++)a[i].connect(a[i+1]);return a[a.length-1]};this.bus=Sound.gain(0);this.bus.connect(Sound.master);this.hb=Sound.gain(1);this.hb.connect(Sound.popBus);this.nodes=[];const keep=Sound.nodes;Sound.nodes=this.nodes;
   for(const [k] of MIXCH){const g=this.g[k]=Sound.gain(0);g.connect(this.bus);
-   if(k==='rain'){mk(Sound.src('pink'),Sound.filt('highpass',250),Sound.filt('lowpass',1300),Sound.filt('lowpass',1800),Sound.gain(.42),g);mk(Sound.src('brown'),Sound.filt('lowpass',260),Sound.gain(.4),g)}
+   if(k==='rain'&&Sound.snd&&Sound.snd.beds.rain){g.disconnect();g.connect(this.hb);Sound.bedLoop('rain',.9,1300,90,g)} /* real rain */
+   else if(k==='rain'){mk(Sound.src('pink'),Sound.filt('highpass',250),Sound.filt('lowpass',1300),Sound.filt('lowpass',1800),Sound.gain(.42),g);mk(Sound.src('brown'),Sound.filt('lowpass',260),Sound.gain(.4),g)}
    else if(k==='brown'){mk(Sound.src('brown'),Sound.filt('lowpass',340),Sound.gain(.9),g)}
    else if(k==='pink'){mk(Sound.src('pink'),Sound.filt('highpass',60),Sound.filt('lowpass',1200),Sound.filt('lowpass',1500),Sound.gain(.55),g)}
    else if(k==='waves'){const w=Sound.gain(.5);Sound.lfo(w.gain,.08,.35);mk(Sound.src('brown'),Sound.filt('lowpass',600),w,g)}
@@ -1897,9 +2121,9 @@ const Mixer={on:false,bus:null,g:{},nodes:[],lv:Object.assign({rain:.5,brown:0,p
  level(k,v){this.lv[k]=clamp(+v||0,0,1);store.set('mix',this.lv);if(this.on&&this.g[k]){const n=Sound.ctx.currentTime;this.g[k].gain.cancelScheduledValues(n);this.g[k].gain.setTargetAtTime(this.lv[k]*.7,n,.8)}},
  vol(v){this.lv.vol=clamp(+v||0,0,1);store.set('mix',this.lv);if(this.on)Sound.setVol(this.lv.vol)},
  start(){if(this.on||prefs.hush)return;Sound.stopNow();if(!Sound.ensure())return;this.build();this.on=true;document.body.classList.add('mixon');const n=Sound.ctx.currentTime;Sound.setVol(this.lv.vol);
-  for(const [k] of MIXCH)this.g[k].gain.setValueAtTime(this.lv[k]*.7,n);this.bus.gain.setValueAtTime(0,n);this.bus.gain.linearRampToValueAtTime(1,n+3.5);syncMix()},
- stop(){if(!this.on)return;this.on=false;document.body.classList.remove('mixon');const b=this.bus,ns=this.nodes,n=Sound.ctx.currentTime;b.gain.cancelScheduledValues(n);b.gain.setValueAtTime(b.gain.value,n);b.gain.linearRampToValueAtTime(0,n+1.5);
-  setTimeout(()=>{ns.forEach(x=>{try{x.stop()}catch(e){}try{x.disconnect()}catch(e){}});try{b.disconnect()}catch(e){}},1700);this.bus=null;this.nodes=[];this.g={};syncMix()}};
+  for(const [k] of MIXCH)this.g[k].gain.setValueAtTime(this.lv[k]*.7,n);for(const x of [this.bus,this.hb]){x.gain.setValueAtTime(0,n);x.gain.linearRampToValueAtTime(1,n+3.5)}syncMix()},
+ stop(){if(!this.on)return;this.on=false;document.body.classList.remove('mixon');const b=this.bus,h=this.hb,ns=this.nodes,n=Sound.ctx.currentTime;for(const x of [b,h]){x.gain.cancelScheduledValues(n);x.gain.setValueAtTime(x.gain.value,n);x.gain.linearRampToValueAtTime(0,n+1.5)}
+  setTimeout(()=>{ns.forEach(x=>{try{x.stop()}catch(e){}try{x.disconnect()}catch(e){}});try{b.disconnect();h.disconnect()}catch(e){}},1700);this.bus=null;this.hb=null;this.nodes=[];this.g={};syncMix()}};
 (function(){const w=$('#mixCh');MIXCH.forEach(([k,l])=>{const d=document.createElement('div');d.className='ch';d.innerHTML='<div class="lab"><label for="mx_'+k+'">'+l+'</label><span class="muted" id="v_mx_'+k+'"></span></div><input type="range" id="mx_'+k+'" min="0" max="1" step="0.05">';w.appendChild(d);
  d.querySelector('input').oninput=e=>{Mixer.level(k,e.target.value);$('#v_mx_'+k).textContent=pct(Mixer.lv[k])}});
  $('#mixVol').oninput=e=>{Mixer.vol(e.target.value);$('#v_mixVol').textContent=pct(Mixer.lv.vol)};
@@ -1956,11 +2180,11 @@ document.querySelectorAll('input[type=range]').forEach(i=>Step.make(i));
 /* ---------- Adult panels re-lock: 45 s without input, the screen being hidden, leaving the panel, or 10 minutes at most ---------- */
 const Adult={at:0,since:0,LOCK:45000,MAX:600000,
  open(){const n=Date.now();this.at=n;if(!this.since)this.since=n},
- isOpen(){return !$('#cardEdit').hidden||!$('#dayEdit').hidden||active()==='prefs'||!$('#adultOpts').hidden},
+ isOpen(){return !$('#cardEdit').hidden||!$('#dayEdit').hidden||!$('#stEdit').hidden||active()==='prefs'||!$('#adultOpts').hidden},
  lock(why){if(this.busy)return;this.busy=true;try{this.lock1(why)}finally{this.busy=false}},
- lock1(why){const was=this.isOpen();this.since=0;$('#cardEdit').hidden=true;$('#vocabList').hidden=true;$('#dayEdit').hidden=true;$('#picker').hidden=true;$('#bkConfirm').hidden=true;bk=null;lockAdult();
+ lock1(why){const was=this.isOpen();this.since=0;$('#cardEdit').hidden=true;$('#vocabList').hidden=true;$('#dayEdit').hidden=true;$('#stEdit').hidden=true;$('#picker').hidden=true;$('#bkConfirm').hidden=true;bk=null;lockAdult();
   if(active()==='prefs')goHome();if(was&&why)toast(why)}};
-['pointerdown','keydown','input','change'].forEach(ev=>document.addEventListener(ev,e=>{if(e.target.closest&&e.target.closest('#cardEdit,#dayEdit,#prefs,#adultOpts'))Adult.at=Date.now()},true));
+['pointerdown','keydown','input','change'].forEach(ev=>document.addEventListener(ev,e=>{if(e.target.closest&&e.target.closest('#cardEdit,#dayEdit,#stEdit,#prefs,#adultOpts'))Adult.at=Date.now()},true));
 setInterval(()=>{if(!Adult.isOpen())return;const n=Date.now();if(n-Adult.at>Adult.LOCK||(Adult.since&&n-Adult.since>Adult.MAX))Adult.lock('Settings locked again')},1000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)Adult.lock()});
 
