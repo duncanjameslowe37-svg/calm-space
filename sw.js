@@ -1,7 +1,7 @@
 /* Calm Space service worker: caches the app so it works offline. No tracking, no network calls beyond loading the app itself. */
-const CACHE = 'calm-space-v14-2026-11-05a'; // bump on every build
-const VOICE = 'calm-space-voice-v2'; // recorded voice clips: kept across updates (file names change when a clip changes)
-const ASSETS = ['./', './index.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './snd.js'];
+const CACHE = 'calm-space-v15-2026-11-05b'; // bump on every build
+const VOICE = 'calm-space-voice-v3'; // recorded voice clips: kept across updates (file names change when a clip changes)
+const ASSETS = ['./', './index.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './snd.js', './guide.html'];
 const VOICES = ['isabella', 'emma', 'george', 'daniel'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
@@ -36,8 +36,9 @@ self.addEventListener('fetch', e => {
     return;
   }
   if (req.mode === 'navigate') { // network first for the page itself, so updates arrive; the cache is the offline fallback
-    e.respondWith(fetch(req).then(res => { if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put('./index.html', copy)); } return res; })
-      .catch(() => caches.match('./index.html')));
+    const guide = /\/guide\.html$/.test(new URL(req.url).pathname); // d8: the printable care-services guide is its own page
+    e.respondWith(fetch(req).then(res => { if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(guide ? './guide.html' : './index.html', copy)); } return res; })
+      .catch(() => caches.match(guide ? './guide.html' : './index.html')));
     return;
   }
   e.respondWith(
