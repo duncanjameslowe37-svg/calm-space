@@ -799,7 +799,7 @@ details.ab{border-top:1px solid var(--line);padding:6px 0}details.ab summary{fon
   <div class="title" id="fxTitle" aria-live="polite"></div>
   <button class="pbtn lockmini" id="lkScene" data-qlock aria-label="Lock this screen. Hold for 2 seconds, then hold the other lock."><span class="ring" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="3" fill="#a7b2bf"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="#a7b2bf" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.6" fill="#1b222c"/></svg></span><span class="lmt">Lock</span></button><button class="pbtn hushmini" id="huScene" data-hush aria-pressed="false" aria-label="Hush: turn sounds off"><svg width="24" height="24" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 24h10l12-10v36L20 40H10z" fill="#a7b2bf"/><path class="mx" d="M42 24l14 16M56 24L42 40" stroke="#a7b2bf" stroke-width="5" stroke-linecap="round"/><path class="wv" d="M42 22a14 14 0 0 1 0 20M48 16a22 22 0 0 1 0 32" fill="none" stroke="#a7b2bf" stroke-width="4" stroke-linecap="round"/></svg><span class="hmt">Hush</span></button><button class="pbtn" id="adjBtn" aria-expanded="false" aria-controls="sheet">Adjust</button>
  </div>
- <div class="hint" id="hint">Tap the screen to show controls</div>
+ <div class="hint" id="hint">Buttons hidden. Tap the screen to bring them back</div>
  <div id="hold" aria-hidden="true">
   <svg width="140" height="140" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="none" stroke="rgba(120,140,160,.25)" stroke-width="5"/>
    <circle class="p" cx="50" cy="50" r="45" fill="none" stroke="rgba(170,190,210,.7)" stroke-width="5" stroke-linecap="round" transform="rotate(-90 50 50)"/></svg>
@@ -2043,8 +2043,10 @@ $('#adjBtn').onclick=()=>{const want=!$('#sheet').classList.contains('open');VG.
 $('#closeSheet').onclick=()=>{hideSheetQ();$('#adjBtn').focus()};function hideSheetQ(){VG.run('sheet',()=>{if(!$('#sheet').classList.contains('open'))return false;hideSheet()})}
 
 let barT=0,sheetT=0;
-function showBar(first){if(classroom||!R.fx)return;soft($('#bar'),'show',true);if(first){soft($('#hint'),'show',true);clearTimeout(showBar.h);showBar.h=setTimeout(()=>soft($('#hint'),'show',false),5000)}
- clearTimeout(barT);barT=setTimeout(()=>{if(lockedScreen)return;if(!$('#sheet').classList.contains('open')&&!$('#bar').contains(document.activeElement))soft($('#bar'),'show',false)},first?6000:4500)}
+/* Deploy 11: the hint only appears once the buttons have actually faded away (the first time on each screen), and it goes the moment the screen is tapped. */
+function showBar(first){if(classroom||!R.fx)return;soft($('#bar'),'show',true);clearTimeout(showBar.h);$('#hint').classList.remove('show');VG.q=VG.q.filter(x=>x.k!=='soft:hint');if(first)showBar.need=true;
+ clearTimeout(barT);barT=setTimeout(()=>{if(lockedScreen)return;if(!$('#sheet').classList.contains('open')&&!$('#bar').contains(document.activeElement)){soft($('#bar'),'show',false);
+  if(showBar.need&&!document.body.classList.contains('qseq')&&!document.body.classList.contains('locked')){showBar.need=false;soft($('#hint'),'show',true);showBar.h=setTimeout(()=>soft($('#hint'),'show',false),5000)}}},first?6000:4500)}
 function openSheet(){if(classroom)return;$('#sheet').classList.add('open');$('#adjBtn').setAttribute('aria-expanded','true');$('#bar').classList.add('show');syncControls();kick()}
 function hideSheet(){$('#sheet').classList.remove('open');$('#adjBtn').setAttribute('aria-expanded','false');lockAdult();showBar()}
 function kick(){clearTimeout(sheetT);sheetT=setTimeout(()=>{if($('#sheet').classList.contains('open')&&!Gate.isOpen())hideSheetQ()},$('#adultOpts').hidden?15000:45000)}
