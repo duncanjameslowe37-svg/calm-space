@@ -59,6 +59,17 @@ button{cursor:pointer;border:0;background:none}
 .brand{display:flex;align-items:center;gap:14px;margin-bottom:4px}
 .brand svg{flex:none}
 .tagline{color:var(--muted);font-size:1.2rem;margin:0 0 20px}
+.brand .appmark{border-radius:16px;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 6px 22px rgba(124,92,255,.38),0 2px 10px rgba(20,212,200,.22)}
+.hero{position:relative;overflow:hidden;margin:12px 0 22px;padding:22px 22px 20px;border-radius:26px;border:1px solid rgba(255,255,255,.1);
+ background:radial-gradient(120% 140% at 0% 100%,rgba(20,212,200,.30),transparent 55%),radial-gradient(120% 140% at 100% 0%,rgba(251,111,176,.30),transparent 55%),linear-gradient(135deg,#1b2a4a 0%,#2a2357 55%,#3a2050 100%);
+ box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08)}
+.hero::after{content:"";position:absolute;right:-46px;top:-46px;width:170px;height:170px;border-radius:50%;border:16px solid rgba(255,247,234,.10);box-shadow:0 0 0 26px rgba(255,247,234,.05);pointer-events:none}
+.hero h1{margin:0 0 8px;font-size:2.45rem;line-height:1.05;font-weight:800;letter-spacing:-.02em;background:linear-gradient(90deg,#5ff2e6 0%,#8fb1ff 38%,#d3a2ff 68%,#ff9ccc 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;position:relative}
+.hero .tagline{margin:0;position:relative;font-size:1.12rem;line-height:1.45;color:#d9d3ff}
+.hero .tagline b{display:block;text-wrap:balance;color:#fff;font-size:1.22rem;font-weight:700;margin-bottom:2px}
+.hero .tagline span{color:#c7c9f2}
+@media (prefers-contrast:more){.hero h1{color:#fff;-webkit-text-fill-color:#fff;background:none}}
+html.hc .hero h1{color:#fff;-webkit-text-fill-color:#fff;background:none}
 .actions{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:24px}
 .calmnow{min-height:96px;flex-direction:column;gap:2px;font-size:1.35rem}
 .calmnow small{font-weight:400;font-size:.9rem;color:var(--muted)}
@@ -424,12 +435,14 @@ details.ab{border-top:1px solid var(--line);padding:6px 0}details.ab summary{fon
 <main id="home" class="screen scroll-ok" aria-labelledby="homeH">
  <div class="wrap">
   <div class="brand">
-   <svg width="44" height="44" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="22" fill="none" stroke="#7d9cc0" stroke-width="3" opacity=".8"/><circle cx="32" cy="32" r="11" fill="#5d7ea3" opacity=".7"/></svg>
-   <h1 id="homeH" tabindex="-1" data-focus>Calm Space</h1>
+   <svg class="appmark" width="52" height="52" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="amg" x1="6%" y1="94%" x2="94%" y2="6%"><stop offset="0" stop-color="#14d4c8"/><stop offset=".34" stop-color="#4f74f7"/><stop offset=".66" stop-color="#a855f7"/><stop offset="1" stop-color="#fb6fb0"/></linearGradient><radialGradient id="amc" cx="40%" cy="36%" r="65%"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#ffd9a0"/></radialGradient></defs><rect width="64" height="64" rx="16" fill="url(#amg)"/><circle cx="32" cy="32" r="20.5" fill="none" stroke="#fff7ea" stroke-width="4.5" opacity=".58"/><circle cx="32" cy="32" r="13.5" fill="none" stroke="#fffaf2" stroke-width="5" opacity=".95"/><circle cx="32" cy="32" r="6" fill="url(#amc)"/></svg>
    <button class="btn hushpill" id="hushBtn" aria-pressed="false"><svg width="28" height="28" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 24h10l12-10v36L20 40H10z" fill="#a7b2bf"/><path d="M42 24l14 16M56 24L42 40" stroke="#a7b2bf" stroke-width="4" stroke-linecap="round"/></svg><span id="hushTxt">Hush</span></button>
    <button class="btn lockmini" id="lkHome" data-qlock aria-label="Lock this screen. Hold for 2 seconds, then hold the other lock."><span class="ring" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="3" fill="#a7b2bf"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="#a7b2bf" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.6" fill="#1b222c"/></svg></span><span class="lmt">Lock</span></button><button class="btn setpill" id="setTop" aria-label="Settings, for adults"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path fill="#a7b2bf" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg><span>Settings</span></button>
   </div>
-  <p class="tagline"><b>Sensory calm, fidgets &amp; talk cards.</b> A calm space you control.</p>
+  <header class="hero">
+   <h1 id="homeH" tabindex="-1" data-focus>Calm Space</h1>
+   <p class="tagline"><b>Sensory calm, fidgets &amp; talk cards.</b> <span>A calm space you control.</span></p>
+  </header>
   <div class="actions">
    <button class="btn primary calmnow" id="calmNow"><span>Calm now</span><small id="calmNowSub">Opens your saved calm</small></button>
    <button class="btn calmnow" id="feelBtn" style="font-size:1.15rem"><span>How I feel</span><small>Get a suggestion</small></button>
@@ -1585,7 +1598,7 @@ const FX={
     {name:'Flower',n:5,d:.64,lr:.28,hub:.5,wr:.17,body:4,wc:i=>i%2?1:2,dots:{n:10,r:.405,s:.03,c:()=>0}}];
    const NOTES=[1,9/8,5/4,3/2,5/3,2,9/4];
    let ds=0;try{ds=(+localStorage.getItem('calmspace.spinDesign')||0)%3}catch(e){}
-   return{SPD,KB:[1.7,1.3],a:0,w:0,wv:0,sps:0,ld:0,kb:0,kh:0,u:0,gl:0,dr:null,bp:null,tn:0,lc:-1e9,deg:2,ds,dsP:-1,dsF:1,dsT:-1e9,cache:{},R:0,bt:null,lay:null,
+   return{SPD,KB:[12,16],va:0,vs:0,mt:0,a:0,w:0,wv:0,sps:0,ld:0,kb:0,kh:0,u:0,gl:0,dr:null,bp:null,tn:0,lc:-1e9,deg:2,ds,dsP:-1,dsF:1,dsT:-1e9,cache:{},R:0,bt:null,lay:null,
    init(w,h){this.R=Math.min(w,h)*.31;this.cache={}},
    col(P,i){const u=this.u,k=Math.floor(u),f=sm(u-k);return mix(P.c[((i+k)%5+5)%5],P.c[((i+k+1)%5+5)%5],f)},
    bodyC(P,D){return D.body<0?mix(mix(P.bg,[0,0,0],.3),this.col(P,1),.3):this.col(P,D.body)},
@@ -1628,9 +1641,14 @@ const FX={
     const v=rdt>0?(this.a-a0)/rdt:0;this.wv+=(v-this.wv)*(1-Math.exp(-rdt/.05));
     const spd=Math.abs(this.wv);this.sps=spd>this.sps?spd:this.sps+(spd-this.sps)*(1-Math.exp(-rdt/.3));
     if(this.a>1e4||this.a<-1e4){const k=Math.round(this.a/TAU)*TAU;this.a-=k;if(d)d.a0-=k;this.tn=Math.floor(this.a/TAU)}
-    /* blur blend: the averaged disc takes over between 1.2 and 2 rad/s and is held for a moment so the lobes don't flicker back and forth */
+    /* Deploy 10: the drawn angle follows the real angle, but never turns more than a set part of a lobe per frame, so the eye can always follow
+       the spin (no wagon-wheel jumps, no sudden swap to a still disc). Fast spins still look fast; spin-up and slow-down are visible at every speed. */
+    {const Dn=this.SPD[this.ds].n,cap=.27*TAU/Dn,da=v*rdt,st=Math.sign(da)*Math.min(Math.abs(da),cap);this.va+=st;if(this.va>1e4||this.va<-1e4)this.va-=Math.round(this.va/TAU)*TAU;
+     const vv=rdt>0?Math.abs(st)/rdt:0;this.vs+=(vv-this.vs)*(1-Math.exp(-rdt/.08));
+     this.mt+=(Math.min(1,Math.sqrt(spd/30))-this.mt)*(1-Math.exp(-rdt/.18))}
+    /* blur blend: a soft averaged disc fades in only at high speed and never fully hides the spinner and is held for a moment so the lobes don't flicker back and forth */
     const kt=sm((this.sps-this.KB[0])/this.KB[1]);if(kt>=this.kb){this.kb=kt;this.kh=.4}else if(this.kh>0)this.kh-=rdt;else this.kb=Math.max(kt,this.kb-rdt/1.5);
-    const kb=this.kb;
+    const kb=Math.min(.5,this.kb*.5);
     /* colours flow with the turning (one palette step per ~20 turns); background glow follows speed slowly */
     this.u+=spd*rdt/(TAU*20);if(this.u>500)this.u-=500;
     this.gl+=(Math.min(1,this.sps/18)-this.gl)*(1-Math.exp(-rdt/2.5));
@@ -1646,26 +1664,33 @@ const FX={
     const draw=(k,al)=>{const D=this.SPD[k],tip=D.d+D.lr;ctx.save();ctx.translate(cx,cy);
           /* tip trails: thin, along the rim; they lengthen with speed and join into an even ring */
      if(spd>.6&&ctx.createConicGradient){const per=TAU/D.n,Lf=Math.min(1,spd*.16/per),T=sm((Lf-.55)/.45),A=al*AM*.8*sm((spd-.6)/2);
-      ctx.save();ctx.rotate(this.a);if(this.wv<0)ctx.scale(1,-1);const cg=ctx.createConicGradient(0,0,0),p=1/D.n;
+      ctx.save();ctx.rotate(this.va);if(this.wv<0)ctx.scale(1,-1);const cg=ctx.createConicGradient(0,0,0),p=1/D.n;
       for(let i=0;i<D.n;i++){const c=this.col(P,D.wc(i)),c2=this.col(P,D.wc((i+1)%D.n));cg.addColorStop(i*p,rgb(c,A));if(Lf<1){cg.addColorStop(i*p+.004,rgb(c,0));cg.addColorStop((i+1)*p-Lf*p,rgb(c2,A*T))}cg.addColorStop((i+1)*p-.0001,rgb(c2,A))}
       ctx.strokeStyle=cg;ctx.lineWidth=R*.04;ctx.beginPath();ctx.arc(0,0,R*(tip+.03),0,TAU);ctx.stroke();ctx.restore()}
-     const E=this.get(P,k,scl,kb<.999);
+     const E=this.get(P,k,scl,true);
      /* soft drop shadow: the spinner's own shape when still, an even soft disc when spinning */
-     if(kb<.999){const z=E.sh.width/scl;ctx.save();ctx.translate(R*.06,R*.12);ctx.rotate(this.a);ctx.globalAlpha=al*(1-kb)*.8;ctx.drawImage(E.sh,-z/2,-z/2,z,z);ctx.restore()}
+     if(true){const z=E.sh.width/scl;ctx.save();ctx.translate(R*.06,R*.12);ctx.rotate(this.va);ctx.globalAlpha=al*(1-kb)*.8;ctx.drawImage(E.sh,-z/2,-z/2,z,z);ctx.restore()}
      if(kb>.001){const pr=E.prof,NB=pr.length,G=ctx.createRadialGradient(R*.06,R*.12,0,R*.06,R*.12,R*1.1);for(let b=0;b<NB;b++)G.addColorStop((b+.5)/NB*1.04/1.1,'rgba(0,0,0,'+(pr[b][3]*.45).toFixed(3)+')');G.addColorStop(1,'rgba(0,0,0,0)');ctx.globalAlpha=al*kb;ctx.fillStyle=G;ctx.fillRect(-R*1.2,-R*1.2,R*2.5,R*2.5)}
      if(kb>.001){const pr=E.prof,NB=pr.length,G=ctx.createRadialGradient(0,0,0,0,0,R*1.04);for(let b=0;b<NB;b++){const q=pr[b];G.addColorStop((b+.5)/NB,rgb(q,q[3]))}G.addColorStop(1,'rgba(0,0,0,0)');
       ctx.globalAlpha=al*kb;ctx.fillStyle=G;ctx.beginPath();ctx.arc(0,0,R*1.04,0,TAU);ctx.fill();
       /* brushed-metal sheen of a spinning disc: two soft radial streaks, fixed to the light */
       ctx.save();ctx.beginPath();ctx.arc(0,0,R*tip*.97,0,TAU);ctx.clip();ctx.rotate(-2.3);ctx.scale(1,.16);const sh=ctx.createRadialGradient(0,0,R*.15,0,0,R*tip);sh.addColorStop(0,'rgba(236,232,226,.0)');sh.addColorStop(.45,'rgba(236,232,226,.13)');sh.addColorStop(1,'rgba(236,232,226,0)');
       ctx.globalAlpha=al*kb*(.5+.5*sm((spd-2)/10));ctx.fillStyle=sh;ctx.beginPath();ctx.arc(0,0,R*tip,0,TAU);ctx.fill();ctx.restore()}
-     if(kb<.999){const sz=E.spr.width,L=this.lay||(this.lay=document.createElement('canvas'));if(L.width!==sz){L.width=L.height=sz}const x=L.getContext('2d');x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,sz,sz);
-      const spread=Math.min(TAU/D.n*.85,spd*.13),K=spread<.01?1:Math.min(10,Math.ceil(spread/.03)+1),dir=this.wv<0?-1:1;
-      for(let i=0;i<K;i++){const an=this.a-dir*spread*(K>1?i/(K-1):0);x.globalAlpha=1/(i+1);x.setTransform(Math.cos(an),Math.sin(an),-Math.sin(an),Math.cos(an),sz/2,sz/2);x.drawImage(E.spr,-sz/2,-sz/2)}
+     if(true){const sz=E.spr.width,L=this.lay||(this.lay=document.createElement('canvas'));if(L.width!==sz){L.width=L.height=sz}const x=L.getContext('2d');x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,sz,sz);
+      const spread=Math.min(TAU/D.n*.6,this.vs*.06),K=spread<.01?1:Math.min(10,Math.ceil(spread/.03)+1),dir=this.wv<0?-1:1;
+      for(let i=0;i<K;i++){const an=this.va-dir*spread*(K>1?i/(K-1):0);x.globalAlpha=1/(i+1);x.setTransform(Math.cos(an),Math.sin(an),-Math.sin(an),Math.cos(an),sz/2,sz/2);x.drawImage(E.spr,-sz/2,-sz/2)}
       x.globalAlpha=1;x.setTransform(1,0,0,1,0,0);x.globalCompositeOperation='source-atop';const s=sz/2,lg=x.createLinearGradient(0,0,sz,sz);lg.addColorStop(0,'rgba(236,232,226,.2)');lg.addColorStop(.5,'rgba(0,0,0,0)');lg.addColorStop(1,'rgba(0,0,12,.3)');x.fillStyle=lg;x.fillRect(0,0,sz,sz);
       const sp=x.createRadialGradient(s*.62,s*.58,0,s*.62,s*.58,s*.55);sp.addColorStop(0,'rgba(236,232,226,.2)');sp.addColorStop(1,'rgba(236,232,226,0)');x.fillStyle=sp;x.fillRect(0,0,sz,sz);x.globalCompositeOperation='source-over';
-      ctx.globalAlpha=al*(1-kb);ctx.drawImage(L,-sz/2/scl,-sz/2/scl,sz/scl,sz/scl)}
+      ctx.globalAlpha=al*(1-.6*kb);ctx.drawImage(L,-sz/2/scl,-sz/2/scl,sz/scl,sz/scl)}
      ctx.restore()};
     if(this.dsF<1&&this.dsP>=0)draw(this.dsP,1-sm(this.dsF));draw(this.ds,this.dsF<1?sm(this.dsF):1);
+    /* Deploy 10: speed ring. A soft coloured arc around the spinner grows smoothly as it speeds up and shrinks as it slows, so the speed can be seen, not only heard. */
+    {const mt=this.mt,rr=R*1.16,lw=Math.max(4,R*.05);ctx.save();ctx.lineCap='round';ctx.lineWidth=lw;ctx.strokeStyle='rgba(255,255,255,'+(.08*AM+.04).toFixed(3)+')';ctx.beginPath();ctx.arc(cx,cy,rr,0,TAU);ctx.stroke();
+     if(mt>.004){const a0r=-Math.PI/2,a1r=a0r+mt*TAU*.999,c1=this.col(P,1),c2=this.col(P,3),c3=this.col(P,0);let st;
+      if(ctx.createConicGradient){st=ctx.createConicGradient(a0r,cx,cy);st.addColorStop(0,rgb(mix(c1,[255,255,255],.15)));st.addColorStop(.5,rgb(mix(c2,[255,255,255],.1)));st.addColorStop(1,rgb(c3))}else st=rgb(c1);
+      ctx.globalAlpha=.55+.4*AM;ctx.shadowColor=rgb(c2,.7);ctx.shadowBlur=lw*1.6*mt;ctx.strokeStyle=st;ctx.beginPath();ctx.arc(cx,cy,rr,a0r,a1r);ctx.stroke();
+      ctx.shadowBlur=0;ctx.fillStyle='rgba(255,255,255,.9)';ctx.beginPath();ctx.arc(cx+Math.cos(a1r)*rr,cy+Math.sin(a1r)*rr,lw*.42,0,TAU);ctx.fill()}
+     ctx.restore();ctx.globalAlpha=1}
     /* the centre cap stays still, as on a real spinner (that's where it is held) */
     {const cr=R*.19,c1=this.col(P,1);ctx.globalAlpha=1;ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.arc(cx+cr*.1,cy+cr*.16,cr*1.04,0,TAU);ctx.fill();
      const g=ctx.createRadialGradient(cx-cr*.35,cy-cr*.4,cr*.05,cx,cy,cr);g.addColorStop(0,'rgb(196,200,210)');g.addColorStop(.55,'rgb(146,152,166)');g.addColorStop(1,'rgb(80,86,100)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,cr,0,TAU);ctx.fill();
