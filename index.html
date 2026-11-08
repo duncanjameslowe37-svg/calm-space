@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Calm Space — talk cards, fidgets &amp; sensory calm</title>
-<meta property="og:title" content="Calm Space — talk cards, fidgets &amp; sensory calm">
+<title>Calm Space — talk cards, stories, fidgets &amp; sensory calm</title>
+<meta property="og:title" content="Calm Space — talk cards, stories, fidgets &amp; sensory calm">
 <meta property="og:description" content="Free, private and offline: slow calm scenes, quiet fidgets, talk cards, My day and stories. No ads, no accounts, no tracking.">
-<meta name="description" content="Calm Space — talk cards, fidgets &amp; sensory calm. Free, private, works offline.">
+<meta name="description" content="Calm Space — talk cards, stories, fidgets &amp; sensory calm. Free, private, works offline.">
 <meta name="theme-color" content="#0f1318">
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -441,7 +441,7 @@ details.ab{border-top:1px solid var(--line);padding:6px 0}details.ab summary{fon
   </div>
   <header class="hero">
    <h1 id="homeH" tabindex="-1" data-focus>Calm Space</h1>
-   <p class="tagline"><b>Talk cards, fidgets &amp; sensory calm.</b> <span>A calm space you control.</span></p>
+   <p class="tagline"><b>Talk cards, stories, fidgets &amp; sensory calm.</b> <span>A calm space you control.</span></p>
   </header>
   <div class="actions">
    <button class="btn primary calmnow" id="calmNow"><span>Calm now</span><small id="calmNowSub">Opens your saved calm</small></button>
@@ -581,7 +581,7 @@ details.ab{border-top:1px solid var(--line);padding:6px 0}details.ab summary{fon
 <section id="about" class="screen scroll-ok" aria-labelledby="aboutH">
  <div class="wrap about" style="max-width:720px">
   <div class="toplink"><button class="btn" data-back aria-label="Back to home">&larr; Home</button></div>
-  <h1 id="aboutH" tabindex="-1" data-focus>About Calm Space — talk cards, fidgets &amp; sensory calm</h1>
+  <h1 id="aboutH" tabindex="-1" data-focus>About Calm Space — talk cards, stories, fidgets &amp; sensory calm</h1>
   <p><button class="btn" id="guideBtn">Guide for care services</button></p>
   <p><b>Free, private and made to help.</b> No ads, no accounts, no tracking. Your settings stay on this device, and it works offline.</p>
   <p>Calm Space is a set of slow, gentle light and sound scenes, plus a few quiet fidgets to press, flick, spin and squish. Pick one, change it until it feels right, and save it as your calm. Then "Calm now" opens it in one tap. It was designed with autistic adults and SEN classrooms in mind, but anyone can use it.</p>
@@ -612,7 +612,7 @@ details.ab{border-top:1px solid var(--line);padding:6px 0}details.ab summary{fon
 <section id="guide" class="screen scroll-ok" aria-labelledby="guideH">
  <div class="wrap about guide" style="max-width:720px">
   <div class="toplink"><button class="btn" data-back aria-label="Back to home">&larr; Home</button></div>
-  <h1 id="guideH" tabindex="-1" data-focus>Calm Space — talk cards, fidgets &amp; sensory calm</h1>
+  <h1 id="guideH" tabindex="-1" data-focus>Calm Space — talk cards, stories, fidgets &amp; sensory calm</h1>
   <p><b>A one-page guide for care services</b></p>
   <p><b>Calm Space is free and not-for-profit.</b> No ads, no accounts, no tracking and nothing to buy. Everything is kept only on the device, and it works offline. It was made by a former SEN teacher for autistic and non-verbal people, their families, schools and care services.</p>
   <h2>1. Set it up (5 minutes, once per device)</h2>
@@ -2178,7 +2178,7 @@ let obAt=-1e9;
 function startOnboarding(){show('onboard');obStep(-1,true)}
 function obStep(i,force){const n=performance.now();if(!force){if(n-obAt<450)return;obAt=n}const b=$('#obBody');
 b.classList.remove('q');
- if(i<0){b.innerHTML='<h1 id="obH" tabindex="-1">Welcome to Calm Space</h1><p class="tagline"><b>Talk cards, fidgets &amp; sensory calm.</b> A calm space you control.</p><p>A few quick, optional questions help set things up. You can skip them, and an adult can change them later in Preferences.</p><p class="muted">Free, private and made to help. Nothing leaves this device.</p><div class="choices"><button class="btn primary choice" id="obGo">Start</button><button class="btn quiet choice" id="obSkip">Skip for now</button></div>';
+ if(i<0){b.innerHTML='<h1 id="obH" tabindex="-1">Welcome to Calm Space</h1><p class="tagline"><b>Talk cards, stories, fidgets &amp; sensory calm.</b> A calm space you control.</p><p>A few quick, optional questions help set things up. You can skip them, and an adult can change them later in Preferences.</p><p class="muted">Free, private and made to help. Nothing leaves this device.</p><div class="choices"><button class="btn primary choice" id="obGo">Start</button><button class="btn quiet choice" id="obSkip">Skip for now</button></div>';
   $('#obGo').onclick=()=>obStep(0);$('#obSkip').onclick=obDone}
  else if(i>=OBQ.length){obDone();return}
  else{const q=OBQ[i];b.classList.add('q');b.innerHTML='<p class="step">Question '+(i+1)+'</p><h1 id="obH" tabindex="-1">'+q.q+'</h1><div class="choices" role="group" aria-labelledby="obH">'+

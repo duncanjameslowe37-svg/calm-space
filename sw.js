@@ -1,5 +1,5 @@
 /* Calm Space service worker: caches the app so it works offline. No tracking, no network calls beyond loading the app itself. */
-const CACHE = 'calm-space-v17-2026-11-08'; // bump on every build
+const CACHE = 'calm-space-v17b-2026-11-08'; // bump on every build
 const VOICE = 'calm-space-voice-v3'; // recorded voice clips: kept across updates (file names change when a clip changes)
 const ASSETS = ['./', './index.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './snd.js', './guide.html', './apple-touch-icon.png'];
 const VOICES = ['isabella', 'emma', 'george', 'daniel'];
